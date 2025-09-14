@@ -205,8 +205,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 // Try to get existing file SHA
                 try {
-                    const existingRes = await fetch(url, { 
-                        headers: { Authorization: `token ${token}` } 
+                    // Corrected code block
+                    const existingRes = await fetch(url, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
                     });
                     if (existingRes.ok) {
                         const existingData = await existingRes.json();
