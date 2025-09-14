@@ -5,63 +5,63 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Food Review Manager</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom style for active tab */
+    .tab-active {
+      border-color: #2563eb; /* blue-600 */
+      font-weight: 600;
+      color: #1f2937; /* gray-800 */
+    }
+  </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-  <!-- Login -->
-  <div id="loginScreen" class="fixed inset-0 flex items-center justify-center">
+  <div id="loginScreen" class="fixed inset-0 flex items-center justify-center bg-gray-100">
     <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
       <h1 class="text-2xl font-bold mb-4 text-center">Food Review Manager</h1>
       <form id="loginForm" class="space-y-4">
-        <input type="password" id="loginPassword" placeholder="Password" required
-          class="w-full border px-3 py-2 rounded-md shadow-sm">
-        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-md">Login</button>
+        <input type="password" id="loginPassword" placeholder="Password" required class="w-full border px-3 py-2 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-400">Login</button>
       </form>
-      <div id="loginError" class="text-red-600 text-sm mt-3 hidden"></div>
-      <div id="loginLoading" class="text-blue-600 text-sm mt-3 hidden">Loading...</div>
+      <div id="loginError" class="text-red-600 text-sm mt-3 text-center hidden"></div>
+      <div id="loginLoading" class="text-blue-600 text-sm mt-3 hidden text-center">Loading...</div>
     </div>
   </div>
 
-  <!-- App -->
   <div id="app" class="max-w-4xl mx-auto p-4 hidden">
     <header class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold">Food Review Manager</h1>
-      <button id="logoutBtn" class="px-4 py-2 border rounded-md">Logout</button>
+      <button id="logoutBtn" class="px-4 py-2 border rounded-md hover:bg-gray-200">Logout</button>
     </header>
 
-    <!-- Tabs -->
     <div class="border-b mb-6">
-      <button id="addTab" class="tab tab-active px-3 py-2 border-b-2 border-blue-600">Add Review</button>
-      <button id="readTab" class="tab px-3 py-2 text-gray-500">Read Reviews</button>
+      <button id="addTab" class="tab px-4 py-2 border-b-2 border-transparent text-gray-500">Add Review</button>
+      <button id="readTab" class="tab px-4 py-2 border-b-2 border-transparent text-gray-500">Read Reviews</button>
     </div>
 
-    <!-- Add Review -->
-    <div id="addReviewContent">
+    <div id="addReviewContent" class="hidden">
       <form id="reviewForm" class="space-y-4 bg-white p-6 rounded-lg shadow-md">
-        <input type="text" id="restaurant" placeholder="Restaurant" required class="w-full border px-3 py-2 rounded-md">
-        <input type="text" id="foodItem" placeholder="Food Item" required class="w-full border px-3 py-2 rounded-md">
-        <input type="number" id="price" step="0.01" placeholder="Price (£)" required class="w-full border px-3 py-2 rounded-md">
+        <input type="text" id="restaurant" name="restaurant" placeholder="Restaurant" required class="w-full border px-3 py-2 rounded-md">
+        <input type="text" id="foodItem" name="foodItem" placeholder="Food Item" required class="w-full border px-3 py-2 rounded-md">
+        <input type="number" id="price" name="price" step="0.01" placeholder="Price (£)" required class="w-full border px-3 py-2 rounded-md">
 
-        <!-- Ratings -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <select id="taste" class="border px-2 py-1 rounded-md"></select>
-          <select id="texture" class="border px-2 py-1 rounded-md"></select>
-          <select id="size" class="border px-2 py-1 rounded-md"></select>
-          <select id="value" class="border px-2 py-1 rounded-md"></select>
+          <select id="taste" name="taste" class="border px-2 py-2 rounded-md"></select>
+          <select id="texture" name="texture" class="border px-2 py-2 rounded-md"></select>
+          <select id="size" name="size" class="border px-2 py-2 rounded-md"></select>
+          <select id="value" name="value" class="border px-2 py-2 rounded-md"></select>
         </div>
 
-        <!-- Image Upload -->
         <div>
-          <label class="block text-sm font-medium mb-2">Upload Photo</label>
-          <input type="file" id="imageUpload" accept="image/*" capture="environment" class="w-full">
-          <img id="imagePreview" class="mt-3 max-h-60 hidden rounded-lg shadow-md">
+          <label class="block text-sm font-medium mb-2">Upload Photo (Optional)</label>
+          <input type="file" id="imageUpload" name="imageUpload" accept="image/*" capture="environment" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+          <img id="imagePreview" class="mt-3 max-h-60 w-full object-cover rounded-lg shadow-md hidden">
         </div>
 
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md">Add Review</button>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Add Review</button>
       </form>
     </div>
 
-    <!-- Read Reviews -->
     <div id="readReviewsContent" class="hidden">
       <div class="bg-white p-6 rounded-lg shadow-md">
         <h2 class="text-2xl font-semibold mb-6">Reviews</h2>
@@ -70,223 +70,320 @@
     </div>
   </div>
 
-  <!-- Toast -->
-  <div id="toast" class="fixed bottom-5 right-5 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transform translate-y-4 transition-all"></div>
+  <div id="toast" class="fixed bottom-5 right-5 px-4 py-2 rounded-lg shadow-lg opacity-0 transform translate-y-4 transition-all"></div>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+      // --- Constants & Config ---
       const GITHUB_OWNER = "elo613";
       const GITHUB_REPO = "FoodReview";
       const REVIEWS_FILE_PATH = "reviews.json";
       const PAT_FILE = "pat.enc.json";
 
-      const getApiUrl = (path) => `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`;
-      const getRawUrl = (path) => `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${path}`;
+      // --- 1. API Service: Handles all GitHub communication ---
+      const githubService = {
+        _getApiUrl: (path) => `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`,
+        _getRawUrl: (path) => `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${path}`,
+        
+        // NOTE: This "decryption" is for obfuscation only and provides no real security.
+        // In a real application, use a proper authentication backend (e.g., OAuth).
+        _decryptPat: (encryptedData) => atob(encryptedData).split("").reverse().join(""),
 
-      let token = null;
-      let reviews = [];
+        async getPat(password) {
+          const res = await fetch(this._getRawUrl(PAT_FILE) + `?t=${Date.now()}`);
+          if (!res.ok) throw new Error("Could not fetch PAT file. Ensure it exists and the repository is public.");
+          const { data } = await res.json();
+          return this._decryptPat(data);
+        },
 
-      const loginForm = document.getElementById("loginForm");
-      const loginPassword = document.getElementById("loginPassword");
-      const loginError = document.getElementById("loginError");
-      const loginLoading = document.getElementById("loginLoading");
-      const loginScreen = document.getElementById("loginScreen");
-      const app = document.getElementById("app");
-      const logoutBtn = document.getElementById("logoutBtn");
+        async fetchReviews() {
+          try {
+            const res = await fetch(this._getRawUrl(REVIEWS_FILE_PATH) + `?t=${Date.now()}`);
+            if (!res.ok) return []; // If file doesn't exist, return empty array
+            const data = await res.json();
+            return Array.isArray(data) ? data : [];
+          } catch (error) {
+            console.error("Failed to fetch or parse reviews:", error);
+            return []; // Return empty on parsing or network errors
+          }
+        },
 
-      const addTab = document.getElementById("addTab");
-      const readTab = document.getElementById("readTab");
-      const addReviewContent = document.getElementById("addReviewContent");
-      const readReviewsContent = document.getElementById("readReviewsContent");
+        async uploadImage(file, token) {
+          const reader = new FileReader();
+          return new Promise((resolve, reject) => {
+            reader.onerror = () => reject(new Error("Failed to read file for upload."));
+            reader.onload = async () => {
+              try {
+                const base64Content = reader.result.split(",")[1];
+                const fileName = `images/${Date.now()}_${file.name}`;
+                const res = await fetch(this._getApiUrl(fileName), {
+                  method: "PUT",
+                  headers: { Authorization: `token ${token}`, "Content-Type": "application/json" },
+                  body: JSON.stringify({ message: `Upload image: ${file.name}`, content: base64Content }),
+                });
+                if (!res.ok) { const err = await res.json(); throw new Error(`Image upload failed: ${err.message}`); }
+                const responseData = await res.json();
+                resolve(responseData.content.download_url); // Use the reliable download_url
+              } catch (error) { reject(error); }
+            };
+            reader.readAsDataURL(file);
+          });
+        },
 
-      const reviewForm = document.getElementById("reviewForm");
-      const reviewsList = document.getElementById("reviewsList");
-      const imageUpload = document.getElementById("imageUpload");
-      const imagePreview = document.getElementById("imagePreview");
-      const toast = document.getElementById("toast");
-
-      const showToast = (msg) => {
-        toast.textContent = msg;
-        toast.classList.remove("opacity-0", "translate-y-4");
-        toast.classList.add("opacity-100", "translate-y-0");
-        setTimeout(() => {
-          toast.classList.remove("opacity-100", "translate-y-0");
-          toast.classList.add("opacity-0", "translate-y-4");
-        }, 2000);
+        async saveReviews(reviews, token) {
+          const apiUrl = this._getApiUrl(REVIEWS_FILE_PATH);
+          let sha = null;
+          try {
+            const res = await fetch(apiUrl, { headers: { Authorization: `token ${token}` } });
+            if (res.ok) sha = (await res.json()).sha;
+            else if (res.status !== 404) throw new Error("Failed to get current file SHA.");
+          } catch (error) { console.warn("Could not retrieve file SHA, proceeding without it.", error); }
+          
+          const body = { message: "Update reviews.json", content: btoa(JSON.stringify(reviews, null, 2)), ...(sha && { sha }) };
+          const res = await fetch(apiUrl, {
+            method: "PUT",
+            headers: { Authorization: `token ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) { const err = await res.json(); throw new Error(`Failed to save reviews: ${err.message}`); }
+        },
       };
 
-      const hideError = () => loginError.classList.add("hidden");
-      const showError = (msg) => { loginError.textContent = msg; loginError.classList.remove("hidden"); };
-      const showLoading = (s) => loginLoading.classList.toggle("hidden", !s);
+      // --- 2. UI Manager: Handles all DOM manipulation ---
+      const ui = {
+        elements: {
+          loginScreen: document.getElementById("loginScreen"), loginForm: document.getElementById("loginForm"),
+          loginPassword: document.getElementById("loginPassword"), loginError: document.getElementById("loginError"),
+          loginLoading: document.getElementById("loginLoading"), app: document.getElementById("app"),
+          logoutBtn: document.getElementById("logoutBtn"), addTab: document.getElementById("addTab"),
+          readTab: document.getElementById("readTab"), addReviewContent: document.getElementById("addReviewContent"),
+          readReviewsContent: document.getElementById("readReviewsContent"), reviewForm: document.getElementById("reviewForm"),
+          reviewsList: document.getElementById("reviewsList"), imageUpload: document.getElementById("imageUpload"),
+          imagePreview: document.getElementById("imagePreview"), toast: document.getElementById("toast"),
+          ratingSelectors: ['taste', 'texture', 'size', 'value'].map(id => document.getElementById(id)),
+        },
 
-      async function fetchPAT(password) {
-        const res = await fetch(getRawUrl(PAT_FILE) + `?t=${Date.now()}`);
-        if (!res.ok) throw new Error("PAT file missing");
-        const enc = await res.json();
-        return atob(enc.data).split("").reverse().join(""); // dummy decrypt
-      }
+        showToast(message, isError = false) {
+          const { toast } = this.elements;
+          toast.textContent = message;
+          toast.className = `fixed bottom-5 right-5 text-white px-4 py-2 rounded-lg shadow-lg transition-all transform ${isError ? 'bg-red-600' : 'bg-green-600'}`;
+          toast.classList.remove("opacity-0", "translate-y-4");
+          toast.classList.add("opacity-100", "translate-y-0");
+          setTimeout(() => {
+            toast.classList.remove("opacity-100", "translate-y-0");
+            toast.classList.add("opacity-0", "translate-y-4");
+          }, 3000);
+        },
+        
+        setLoginState({ isLoading = false, error = null }) {
+          this.elements.loginLoading.classList.toggle("hidden", !isLoading);
+          this.elements.loginError.textContent = error || '';
+          this.elements.loginError.classList.toggle("hidden", !error);
+          this.elements.loginForm.querySelector('button').disabled = isLoading;
+        },
 
-      async function fetchReviews() {
-        try {
-          const res = await fetch(getRawUrl(REVIEWS_FILE_PATH) + `?t=${Date.now()}`);
-          if (!res.ok) { reviews = []; return; }
-          reviews = await res.json();
-        } catch { reviews = []; }
-      }
+        _createReviewHTML(review, index) {
+          const { restaurant, foodItem, price, image, timestamp, taste, texture, size, value } = review;
+          const formattedDate = new Date(timestamp).toLocaleString('en-GB');
+          return `
+            <div class="p-4 border rounded-lg bg-gray-50 flex flex-col" data-index="${index}">
+              <div class="flex-grow">
+                <h3 class="text-xl font-bold text-blue-600">${restaurant}</h3>
+                <p class="text-gray-700">${foodItem} - £${price}</p>
+                ${image ? `<img src="${image}" alt="Photo of ${foodItem}" class="my-3 max-h-60 w-full object-cover rounded-lg">` : ""}
+                <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600">
+                  <span>Taste: <strong>${taste}/10</strong></span> <span>Texture: <strong>${texture}/10</strong></span>
+                  <span>Size: <strong>${size}/10</strong></span> <span>Value: <strong>${value}/10</strong></span>
+                </div>
+              </div>
+              <div class="mt-3 flex justify-between items-center text-sm">
+                  <span class="text-gray-500">Added: ${formattedDate}</span>
+                  <button class="font-semibold text-red-600 hover:text-red-800" data-action="delete">Delete</button>
+              </div>
+            </div>`;
+        },
 
-      async function uploadImage(file) {
-        const reader = new FileReader();
-        return new Promise((resolve, reject) => {
-          reader.onload = async () => {
-            const base64 = reader.result.split(",")[1];
-            const fileName = `images/${Date.now()}_${file.name}`;
-            const apiUrl = getApiUrl(fileName);
-            const res = await fetch(apiUrl, {
-              method: "PUT",
-              headers: { Authorization: `token ${token}`, "Content-Type": "application/json" },
-              body: JSON.stringify({
-                message: "Upload image",
-                content: base64
-              })
-            });
-            if (!res.ok) return reject("Upload failed");
-            resolve(getRawUrl(fileName));
-          };
-          reader.readAsDataURL(file);
-        });
-      }
+        renderReviews(reviews) {
+          const { reviewsList } = this.elements;
+          if (!reviews || reviews.length === 0) {
+            reviewsList.innerHTML = `<p class="text-gray-500 text-center">No reviews yet. Add one!</p>`;
+            return;
+          }
+          reviewsList.innerHTML = reviews.slice().reverse()
+            .map((review, i) => this._createReviewHTML(review, reviews.length - 1 - i)).join("");
+        },
+        
+        updateView(state) {
+            const { token, activeTab } = state;
+            const isLoggedIn = !!token;
+            this.elements.loginScreen.classList.toggle('hidden', isLoggedIn);
+            this.elements.app.classList.toggle('hidden', !isLoggedIn);
+            if (!isLoggedIn) return;
 
-      async function saveReviews() {
-        const apiUrl = getApiUrl(REVIEWS_FILE_PATH);
-        const content = btoa(JSON.stringify(reviews, null, 2));
-        let sha = null;
-        try {
-          const res = await fetch(apiUrl, { headers: { Authorization: `token ${token}` } });
-          if (res.ok) sha = (await res.json()).sha;
-        } catch {}
-        await fetch(apiUrl, {
-          method: "PUT",
-          headers: { Authorization: `token ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ message: "Update reviews", content, sha })
-        });
-      }
+            const isAddTab = activeTab === 'add';
+            this.elements.addTab.classList.toggle('tab-active', isAddTab);
+            this.elements.readTab.classList.toggle('tab-active', !isAddTab);
+            this.elements.addReviewContent.classList.toggle('hidden', !isAddTab);
+            this.elements.readReviewsContent.classList.toggle('hidden', isAddTab);
+        },
 
-      function formatDate(isoString) {
-        return new Date(isoString).toLocaleString();
-      }
-
-      async function deleteReview(index) {
-        reviews.splice(index, 1);
-        await saveReviews();
-        await fetchReviews();
-        renderReviews();
-        showToast("Review deleted");
-      }
-
-      function renderReviews() {
-        reviewsList.innerHTML = reviews.length
-          ? ""
-          : `<p class="text-gray-500 text-center">No reviews yet.</p>`;
-        reviews.slice().reverse().forEach((r, i) => {
-          const div = document.createElement("div");
-          div.className = "p-4 border rounded-lg bg-gray-50";
-          div.innerHTML = `
-            <h3 class="text-xl font-bold text-blue-600">${r.restaurant}</h3>
-            <p>${r.foodItem} - £${r.price}</p>
-            ${r.image ? `<img src="${r.image}" class="mt-3 max-h-60 rounded-lg">` : ""}
-            <p class="text-sm text-gray-500 mt-2">Added: ${formatDate(r.timestamp)}</p>
-            <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-              <div>Taste: ${r.taste}/10</div>
-              <div>Texture: ${r.texture}/10</div>
-              <div>Size: ${r.size}/10</div>
-              <div>Value: ${r.value}/10</div>
-            </div>
-            <button class="mt-3 text-red-600 text-sm">Delete</button>
-          `;
-          div.querySelector("button").addEventListener("click", () => deleteReview(reviews.length - 1 - i));
-          reviewsList.appendChild(div);
-        });
-      }
-
-      async function addReview(e) {
-        e.preventDefault();
-        let imageUrl = "";
-        if (imageUpload.files.length > 0) {
-          imageUrl = await uploadImage(imageUpload.files[0]);
+        resetForm() {
+            this.elements.reviewForm.reset();
+            this.elements.imagePreview.src = '';
+            this.elements.imagePreview.classList.add('hidden');
+        },
+        
+        populateRatingSelectors() {
+          this.elements.ratingSelectors.forEach(select => {
+              if (select.options.length > 1) return;
+              const placeholder = select.id.charAt(0).toUpperCase() + select.id.slice(1);
+              select.innerHTML = `<option value="" disabled selected>${placeholder}</option>`;
+              for (let i = 1; i <= 10; i++) select.add(new Option(i, i));
+              select.required = true;
+          });
         }
-        const newReview = {
-          restaurant: document.getElementById("restaurant").value,
-          foodItem: document.getElementById("foodItem").value,
-          price: parseFloat(document.getElementById("price").value).toFixed(2),
-          taste: document.getElementById("taste").value,
-          texture: document.getElementById("texture").value,
-          size: document.getElementById("size").value,
-          value: document.getElementById("value").value,
-          image: imageUrl,
-          timestamp: new Date().toISOString()
-        };
-        reviews.push(newReview);
-        await saveReviews();
-        await fetchReviews();
-        renderReviews();
-        reviewForm.reset();
-        imagePreview.classList.add("hidden");
-        switchTab("read");
-        showToast("Successfully added");
-      }
+      };
 
-      function switchTab(tab) {
-        if (tab === "add") {
-          addReviewContent.classList.remove("hidden");
-          readReviewsContent.classList.add("hidden");
-        } else {
-          readReviewsContent.classList.remove("hidden");
-          addReviewContent.classList.add("hidden");
-          renderReviews();
+      // --- 3. App Controller: Manages state and orchestrates the app ---
+      const app = {
+        state: {
+          token: sessionStorage.getItem('github_pat') || null,
+          reviews: [],
+          activeTab: 'read',
+          isBusy: false,
+        },
+
+        setState(newState) {
+          Object.assign(this.state, newState);
+          ui.updateView(this.state);
+          if (newState.reviews !== undefined) {
+              ui.renderReviews(this.state.reviews);
+          }
+        },
+
+        async handleLogin(e) {
+          e.preventDefault();
+          if (this.state.isBusy) return;
+          this.setState({ isBusy: true });
+          ui.setLoginState({ isLoading: true });
+          try {
+            const token = await githubService.getPat(ui.elements.loginPassword.value);
+            sessionStorage.setItem('github_pat', token);
+            const reviews = await githubService.fetchReviews();
+            this.setState({ token, reviews, activeTab: 'read' });
+          } catch (error) {
+            console.error("Login failed:", error);
+            ui.setLoginState({ error: "Login failed. Check password or PAT file." });
+          } finally {
+            this.setState({ isBusy: false });
+            ui.setLoginState({ isLoading: false });
+          }
+        },
+        
+        handleLogout() {
+            sessionStorage.removeItem('github_pat');
+            this.setState({ token: null, reviews: [], activeTab: 'read' });
+        },
+        
+        async handleAddReview(e) {
+          e.preventDefault();
+          if (this.state.isBusy) return;
+          
+          const form = e.target;
+          const imageFile = ui.elements.imageUpload.files[0];
+          
+          this.setState({ isBusy: true });
+          ui.showToast("Adding review...");
+      
+          try {
+              let imageUrl = "";
+              if (imageFile) {
+                  imageUrl = await githubService.uploadImage(imageFile, this.state.token);
+              }
+              const newReview = {
+                  restaurant: form.elements.restaurant.value,
+                  foodItem: form.elements.foodItem.value,
+                  price: parseFloat(form.elements.price.value).toFixed(2),
+                  taste: form.elements.taste.value, texture: form.elements.texture.value,
+                  size: form.elements.size.value, value: form.elements.value.value,
+                  image: imageUrl, timestamp: new Date().toISOString()
+              };
+              
+              const updatedReviews = [...this.state.reviews, newReview];
+              await githubService.saveReviews(updatedReviews, this.state.token);
+              
+              this.setState({ reviews: updatedReviews, activeTab: 'read' });
+              ui.resetForm();
+              ui.showToast("Review added successfully!");
+          } catch (error) {
+              console.error("Failed to add review:", error);
+              ui.showToast(`Error: ${error.message}`, true);
+          } finally {
+              this.setState({ isBusy: false });
+          }
+        },
+      
+        async handleDeleteReview(index) {
+            if (this.state.isBusy || !confirm("Are you sure you want to delete this review?")) return;
+            this.setState({ isBusy: true });
+            ui.showToast("Deleting review...");
+            try {
+                const updatedReviews = this.state.reviews.filter((_, i) => i !== index);
+                await githubService.saveReviews(updatedReviews, this.state.token);
+                this.setState({ reviews: updatedReviews });
+                ui.showToast("Review deleted.");
+            } catch (error) {
+                console.error("Failed to delete review:", error);
+                ui.showToast(`Error: ${error.message}`, true);
+            } finally {
+                this.setState({ isBusy: false });
+            }
+        },
+      
+        handleImagePreview(e) {
+          const file = e.target.files[0];
+          const { imagePreview } = ui.elements;
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = ev => { imagePreview.src = ev.target.result; imagePreview.classList.remove("hidden"); };
+            reader.readAsDataURL(file);
+          } else {
+            imagePreview.src = ''; imagePreview.classList.add("hidden");
+          }
+        },
+      
+        async init() {
+          // Bind all event listeners
+          ui.elements.loginForm.addEventListener("submit", this.handleLogin.bind(this));
+          ui.elements.logoutBtn.addEventListener("click", this.handleLogout.bind(this));
+          ui.elements.reviewForm.addEventListener("submit", this.handleAddReview.bind(this));
+          ui.elements.imageUpload.addEventListener("change", this.handleImagePreview.bind(this));
+          ui.elements.addTab.addEventListener("click", () => this.setState({ activeTab: 'add' }));
+          ui.elements.readTab.addEventListener("click", () => this.setState({ activeTab: 'read' }));
+      
+          // Use event delegation for delete buttons
+          ui.elements.reviewsList.addEventListener('click', (e) => {
+              if (e.target.dataset.action === 'delete') {
+                  const index = parseInt(e.target.closest('[data-index]').dataset.index, 10);
+                  this.handleDeleteReview(index);
+              }
+          });
+      
+          // Initial UI setup
+          ui.populateRatingSelectors();
+          ui.updateView(this.state);
+      
+          // If already logged in (token in session), fetch initial data
+          if (this.state.token) {
+              this.setState({ isBusy: true });
+              const reviews = await githubService.fetchReviews();
+              this.setState({ reviews, isBusy: false });
+          }
         }
-      }
+      };
 
-      loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        hideError(); showLoading(true);
-        try {
-          token = await fetchPAT(loginPassword.value);
-          await fetchReviews();
-          loginScreen.classList.add("hidden");
-          app.classList.remove("hidden");
-          switchTab("read");
-        } catch {
-          showError("Login failed");
-        } finally { showLoading(false); }
-      });
-
-      logoutBtn.addEventListener("click", () => {
-        token = null;
-        app.classList.add("hidden");
-        loginScreen.classList.remove("hidden");
-      });
-
-      addTab.addEventListener("click", () => switchTab("add"));
-      readTab.addEventListener("click", () => switchTab("read"));
-      reviewForm.addEventListener("submit", addReview);
-
-      imageUpload.addEventListener("change", () => {
-        if (imageUpload.files.length > 0) {
-          const reader = new FileReader();
-          reader.onload = e => {
-            imagePreview.src = e.target.result;
-            imagePreview.classList.remove("hidden");
-          };
-          reader.readAsDataURL(imageUpload.files[0]);
-        } else {
-          imagePreview.classList.add("hidden");
-        }
-      });
-
-      ["taste", "texture", "size", "value"].forEach(id => {
-        const sel = document.getElementById(id);
-        for (let i = 1; i <= 10; i++) sel.appendChild(new Option(i, i));
-      });
+      // Start the application
+      app.init();
     });
   </script>
 </body>
