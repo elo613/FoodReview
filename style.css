@@ -1,0 +1,7 @@
+.tab-active {
+  border-color: #2563eb;
+  color: #111827;
+}
+.transition-all {
+  transition: all 0.3s ease-in-out;
+}
