@@ -31,7 +31,7 @@
         .modal-overlay {
             animation: fadeIn 0.3s ease-in-out;
         }
-        .login-form {
+        .password-overlay {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
     </style>
@@ -587,18 +587,11 @@
             };
 
             // --- Event Listeners ---
-            loginForm.addEventListener('submit', handleLogin);
+            passwordForm.addEventListener('submit', handlePasswordSubmit);
             logoutBtn.addEventListener('click', handleLogout);
             Object.keys(tabs).forEach(id => tabs[id].addEventListener('click', () => switchTab(id)));
             reviewForm.addEventListener('submit', addReview);
             imageUpload.addEventListener('change', handleImageUpload);
-            saveToGithubBtn.addEventListener('click', async () => {
-                try {
-                    await saveReviewsToGithub();
-                } catch (error) {
-                    showToast(`Error: ${error.message}`, 'error');
-                }
-            });
             reviewsList.addEventListener('click', (e) => {
                 if (e.target.classList.contains('delete-btn')) {
                     const index = e.target.dataset.index;
