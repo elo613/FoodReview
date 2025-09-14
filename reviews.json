@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "restaurant": "BangBang",
+    "foodItem": "Test",
+    "price": "10.00",
+    "taste": "1",
+    "texture": "2",
+    "size": "3",
+    "value": "4",
+    "EL": "No",
+    "AG": "Yes",
+    "imageUpload": {},
+    "timestamp": "2025-09-14T15:50:31.139Z",
+    "image": "https://raw.githubusercontent.com/elo613/FoodReview/main/images/1757865031139_test.png"
+  }
+]
