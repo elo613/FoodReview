@@ -59,47 +59,113 @@ document.addEventListener("DOMContentLoaded", () => {
 
         _compressImage(file, options = {}) {
             return new Promise((resolve, reject) => {
-                const { maxWidth = 800, quality = 0.7 } = options; // Sensible defaults
+                // More aggressive defaults for mobile
+                const { 
+                    maxWidth = 600,  // Reduced from 800
+                    maxHeight = 600, // Add max height
+                    quality = 0.6,   // Reduced from 0.7
+                    maxFileSize = 2 * 1024 * 1024 // 2MB max
+                } = options;
+        
+                // Check file size first
+                if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                    return reject(new Error('Image file too large (max 10MB)'));
+                }
+        
                 const image = new Image();
                 image.src = URL.createObjectURL(file);
-
+        
                 image.onload = () => {
-                    URL.revokeObjectURL(image.src); // Clean up memory
-                    let { width, height } = image;
-
-                    // Resize if the image is too large
-                    if (width > maxWidth) {
-                        height = (maxWidth / width) * height;
-                        width = maxWidth;
+                    try {
+                        URL.revokeObjectURL(image.src);
+                        let { width, height } = image;
+        
+                        // Calculate new dimensions maintaining aspect ratio
+                        if (width > maxWidth || height > maxHeight) {
+                            const widthRatio = maxWidth / width;
+                            const heightRatio = maxHeight / height;
+                            const ratio = Math.min(widthRatio, heightRatio);
+                            
+                            width = Math.floor(width * ratio);
+                            height = Math.floor(height * ratio);
+                        }
+        
+                        // Additional check for canvas memory limits
+                        const maxCanvasSize = 4096; // Common mobile limit
+                        if (width > maxCanvasSize || height > maxCanvasSize) {
+                            const canvasRatio = Math.min(maxCanvasSize / width, maxCanvasSize / height);
+                            width = Math.floor(width * canvasRatio);
+                            height = Math.floor(height * canvasRatio);
+                        }
+        
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Enable image smoothing for better quality
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        
+                        // Draw image
+                        ctx.drawImage(image, 0, 0, width, height);
+        
+                        // Convert to blob with error handling
+                        canvas.toBlob(
+                            (blob) => {
+                                if (!blob) {
+                                    return reject(new Error('Canvas to Blob conversion failed'));
+                                }
+        
+                                // Check if compressed size is acceptable
+                                if (blob.size > maxFileSize) {
+                                    // Try with lower quality
+                                    canvas.toBlob(
+                                        (retryBlob) => {
+                                            if (!retryBlob) {
+                                                return reject(new Error('Image compression failed'));
+                                            }
+                                            
+                                            const compressedFile = new File([retryBlob], file.name, {
+                                                type: 'image/jpeg',
+                                                lastModified: Date.now(),
+                                            });
+                                            resolve(compressedFile);
+                                        },
+                                        'image/jpeg',
+                                        Math.max(0.3, quality - 0.3) // Lower quality retry
+                                    );
+                                } else {
+                                    const compressedFile = new File([blob], file.name, {
+                                        type: 'image/jpeg',
+                                        lastModified: Date.now(),
+                                    });
+                                    resolve(compressedFile);
+                                }
+                            },
+                            'image/jpeg',
+                            quality
+                        );
+        
+                    } catch (error) {
+                        URL.revokeObjectURL(image.src);
+                        reject(new Error(`Image processing failed: ${error.message}`));
                     }
-
-                    const canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(image, 0, 0, width, height);
-
-                    // Convert canvas to Blob, then to File
-                    canvas.toBlob(
-                        (blob) => {
-                            if (!blob) {
-                                return reject(new Error('Canvas to Blob conversion failed.'));
-                            }
-                            const compressedFile = new File([blob], file.name, {
-                                type: 'image/jpeg',
-                                lastModified: Date.now(),
-                            });
-                            resolve(compressedFile);
-                        },
-                        'image/jpeg', // Force JPEG for better compression
-                        quality
-                    );
                 };
-
+        
                 image.onerror = (error) => {
                     URL.revokeObjectURL(image.src);
-                    reject(error);
+                    reject(new Error('Failed to load image for compression'));
                 };
+        
+                // Add timeout for mobile devices
+                setTimeout(() => {
+                    if (!image.complete) {
+                        URL.revokeObjectURL(image.src);
+                        reject(new Error('Image loading timeout'));
+                    }
+                }, 10000); // 10 second timeout
             });
         },
 
