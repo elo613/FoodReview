@@ -60,3 +60,37 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Add this to the bottom of your style.css file */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.spinner {
+    display: none; /* Hidden by default */
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+/* Loading State */
+.btn.loading .spinner {
+    display: block; /* Show spinner when loading */
+}
+
+.btn.loading .btn-text {
+    display: none; /* Hide text when loading */
+}
+
+/* Spinner Animation */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
