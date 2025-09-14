@@ -89,13 +89,26 @@ document.addEventListener("DOMContentLoaded", () => {
                         ctx.drawImage(image, 0, 0, width, height);
 
                         canvas.toBlob(blob => {
-                            if (!blob) return reject(new Error('Canvas to Blob conversion failed.'));
-                            const compressedFile = new File([blob], file.name, {
-                                type: 'image/jpeg',
-                                lastModified: Date.now(),
-                            });
-                            resolve(compressedFile);
+                          if (!blob) {
+                            console.warn("toBlob failed, using toDataURL fallback");
+                            const dataUrl = canvas.toDataURL('image/jpeg', options.quality);
+                            const byteString = atob(dataUrl.split(',')[1]);
+                            const buffer = new ArrayBuffer(byteString.length);
+                            const intArray = new Uint8Array(buffer);
+                            for (let i = 0; i < byteString.length; i++) {
+                              intArray[i] = byteString.charCodeAt(i);
+                            }
+                            const fallbackFile = new File([intArray], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' });
+                            resolve(fallbackFile);
+                            return;
+                          }
+                          const compressedFile = new File([blob], file.name.replace(/\.\w+$/, '.jpg'), {
+                            type: 'image/jpeg',
+                            lastModified: Date.now(),
+                          });
+                          resolve(compressedFile);
                         }, 'image/jpeg', options.quality);
+
                     } catch(error) {
                         reject(error);
                     } finally {
@@ -115,7 +128,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const url = this._getApiUrl(fileName);
             const base64Content = await new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onload = () => {
+                  const result = reader.result;
+                  const base64 = result.includes(',') ? result.split(',')[1] : result;
+                  resolve(base64);
+                };
                 reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
