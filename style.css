@@ -94,3 +94,12 @@
         transform: rotate(360deg);
     }
 }
+
+#imagePreview {
+    transition: opacity 0.3s ease;
+}
+
+#imagePreview.loading {
+    opacity: 0.6;
+    background: #f3f4f6;
+}
