@@ -12,19 +12,5 @@
     "imageUpload": {},
     "timestamp": "2025-09-14T15:50:31.139Z",
     "image": "https://raw.githubusercontent.com/elo613/FoodReview/main/images/1757865031139_test.png"
-  },
-  {
-    "restaurant": "Hhb",
-    "foodItem": "Ggv",
-    "price": "999.00",
-    "taste": "1",
-    "texture": "1",
-    "size": "5",
-    "value": "7",
-    "EL": "Yes",
-    "AG": "No",
-    "imageUpload": {},
-    "timestamp": "2025-09-14T15:53:42.051Z",
-    "image": "https://raw.githubusercontent.com/elo613/FoodReview/main/images/1757865222051_1000125103.jpg"
   }
 ]
