@@ -247,10 +247,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 
                 console.log('Saving to URL:', url);
-                console.log('Token length:', token.length);
+                console.log('Token (first 10 chars):', token.substring(0, 10));
                 console.log('Request body keys:', Object.keys(requestBody));
                 
-                const res = await fetch(url, {
+                // Validate the token format (GitHub PATs should start with certain prefixes)
+                if (!token.match(/^(ghp_|gho_|ghu_|ghs_|ghr_)/)) {
+                    throw new Error('Invalid GitHub token format. Token should start with ghp_, gho_, ghu_, ghs_, or ghr_');
+                }
+                
+                const fetchOptions = {
                     method: "PUT",
                     headers: {
                         'Authorization': `Bearer ${token.trim()}`,
@@ -258,8 +263,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         'Content-Type': 'application/json',
                         'User-Agent': 'Food-Review-App'
                     },
-                    body: JSON.stringify(requestBody),
-                });
+                    body: JSON.stringify(requestBody)
+                };
+                
+                console.log('Request headers:', Object.keys(fetchOptions.headers));
+                
+                const res = await fetch(url, fetchOptions);
                                 
                 if (!res.ok) {
                     const errorText = await res.text();
