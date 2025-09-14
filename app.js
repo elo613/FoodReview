@@ -271,16 +271,25 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       });
 
-      UIManager.imageUpload.addEventListener("change",e=>{
+    UIManager.imageUpload.addEventListener("change", e => {
         const file = e.target.files[0];
+    
         if(file){
-          const reader = new FileReader();
-          reader.onload = ev => { UIManager.imagePreview.src = ev.target.result; UIManager.imagePreview.classList.remove('hidden'); };
-          reader.readAsDataURL(file);
+            const reader = new FileReader();
+            reader.onload = ev => { 
+                UIManager.imagePreview.src = ev.target.result; 
+                UIManager.imagePreview.classList.remove('hidden'); 
+            };
+            reader.readAsDataURL(file);
         } else {
-          UIManager.imagePreview.src=''; UIManager.imagePreview.classList.add('hidden');
+            UIManager.imagePreview.src='';
+            UIManager.imagePreview.classList.add('hidden');
         }
-      });
+    
+        // Reset value so the same file can be selected again
+        e.target.value = '';
+    });
+
 
       UIManager.addTab.addEventListener("click",()=>this.setState({activeTab:'add'}));
       UIManager.readTab.addEventListener("click",()=>this.setState({activeTab:'read'}));
