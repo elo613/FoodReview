@@ -40,19 +40,5 @@
     "imageUpload": {},
     "timestamp": "2025-09-14T15:53:42.051Z",
     "image": "https://raw.githubusercontent.com/elo613/FoodReview/main/images/1757865222051_1000125103.jpg"
-  },
-  {
-    "restaurant": "Ggg",
-    "foodItem": "Ghh",
-    "price": "33.00",
-    "taste": "2",
-    "texture": "6",
-    "size": "7",
-    "value": "9",
-    "EL": "No",
-    "AG": "No",
-    "imageUpload": {},
-    "timestamp": "2025-09-14T15:54:12.971Z",
-    "image": "https://raw.githubusercontent.com/elo613/FoodReview/main/images/1757865252971_1000125103.jpg"
   }
 ]
