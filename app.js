@@ -546,4 +546,10 @@ UIManager.imageUpload.addEventListener("change", async (e) => {
     });
 });
 
-AppController.init();
+            UIManager.addTab.addEventListener("click", () => this.setState({ activeTab: 'add' }));
+            UIManager.readTab.addEventListener("click", () => this.setState({ activeTab: 'read' }));
+        }
+    };
+
+    AppController.init();
+});
