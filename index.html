@@ -113,15 +113,15 @@ document.addEventListener("DOMContentLoaded", () => {
         async fetchReviews() {
             try {
                 const res = await fetch(`${this._getRawUrl(REVIEWS_FILE_PATH)}?t=${Date.now()}`);
-                if (res.status === 404) return []; // No reviews file yet, return empty.
+                if (res.status === 404) return []; // No reviews file yet
                 if (!res.ok) throw new Error(`Network error: ${res.statusText}`);
                 const data = await res.json();
-                return Array.isArray(data) ? data : [];
+                return Array.isArray(data) ? data : []; // Ensure an array
             } catch (error) {
                 console.error("Failed to fetch or parse reviews:", error);
-                throw new Error("Could not load reviews from GitHub.");
+                return [];
             }
-        },
+        }
 
         async _resizeImage(file, maxWidth = 1280) {
             return new Promise((resolve, reject) => {
