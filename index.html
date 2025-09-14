@@ -250,9 +250,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.log('Token (first 10 chars):', token.substring(0, 10));
                 console.log('Request body keys:', Object.keys(requestBody));
                 
-                // Validate the token format (GitHub PATs should start with certain prefixes)
-                if (!token.match(/^(ghp_|gho_|ghu_|ghs_|ghr_)/)) {
-                    throw new Error('Invalid GitHub token format. Token should start with ghp_, gho_, ghu_, ghs_, or ghr_');
+                // More flexible token validation - GitHub tokens can have various formats
+                if (token.length < 20) {
+                    throw new Error('Token appears too short. Please check your PAT encryption/decryption.');
+                }
+                
+                // Check for common non-token strings that might indicate decryption issues
+                if (token.includes('undefined') || token.includes('null') || token.trim() === '') {
+                    throw new Error('Token decryption failed. Please check your password and PAT file.');
                 }
                 
                 const fetchOptions = {
