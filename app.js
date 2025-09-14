@@ -5,97 +5,102 @@ document.addEventListener("DOMContentLoaded", () => {
   const PAT_FILE = "pat.enc.json";
 
   // --- ApiService ---
-  const ApiService = {
-    _getApiUrl: path => `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(path)}`,
-    _getRawUrl: path => `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${encodeURIComponent(path)}`,
-    _xorCipher: (str,key)=>str.split('').map((c,i)=>String.fromCharCode(c.charCodeAt(0)^key.charCodeAt(i%key.length))).join(''),
-    _decryptPat: (data,key)=>ApiService._xorCipher(atob(data),key).trim(),
-    _isValidGitHubToken: token=>token && typeof token==='string' && ['ghp_','gho_','ghu_','ghs_','ghr_','github_pat_'].some(p=>token.startsWith(p)) && token.length>=40,
+// --- ApiService ---
+  const ApiService = {
+    _getApiUrl: path => `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(path)}`,
+    _getRawUrl: path => `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${encodeURIComponent(path)}`,
+    _xorCipher: (str,key)=>str.split('').map((c,i)=>String.fromCharCode(c.charCodeAt(0)^key.charCodeAt(i%key.length))).join(''),
+    _decryptPat: (data,key)=>ApiService._xorCipher(atob(data),key).trim(),
+    _isValidGitHubToken: token=>token && typeof token==='string' && ['ghp_','gho_','ghu_','ghs_','ghr_','github_pat_'].some(p=>token.startsWith(p)) && token.length>=40,
 
-    async getPat(password){
-      const res = await fetch(`${this._getRawUrl(PAT_FILE)}?t=${Date.now()}`);
-      if(!res.ok) throw new Error("Could not fetch PAT file.");
-      const {data} = await res.json();
-      const token = this._decryptPat(data,password);
-      if(!this._isValidGitHubToken(token)) throw new Error("Incorrect password or token decryption failed.");
-      return token;
-    },
+    async getPat(password){
+      // --- CHANGE IS HERE ---
+      // This now fetches the file from the same directory as the HTML file.
+      const res = await fetch(`./${PAT_FILE}?t=${Date.now()}`); 
+      // --- END OF CHANGE ---
+      if(!res.ok) throw new Error("Could not fetch local PAT file.");
+      const {data} = await res.json();
+      const token = this._decryptPat(data,password);
+      if(!this._isValidGitHubToken(token)) throw new Error("Incorrect password or token decryption failed.");
+      return token;
+    },
 
-    async fetchReviews(){
-      const res = await fetch(`${this._getRawUrl(REVIEWS_FILE_PATH)}?t=${Date.now()}`);
-      if(res.status===404) return [];
-      if(!res.ok) throw new Error("Failed to fetch reviews.");
-      return await res.json();
-    },
+    // No changes to the functions below
+    async fetchReviews(){
+      const res = await fetch(`${this._getRawUrl(REVIEWS_FILE_PATH)}?t=${Date.now()}`);
+      if(res.status===404) return [];
+      if(!res.ok) throw new Error("Failed to fetch reviews.");
+      return await res.json();
+    },
 
-    async saveReviews(reviews,token){
-      const url = this._getApiUrl(REVIEWS_FILE_PATH);
-      let sha = null;
+    async saveReviews(reviews,token){
+      const url = this._getApiUrl(REVIEWS_FILE_PATH);
+      let sha = null;
 
-      const metaRes = await fetch(url,{
-        headers:{
-          'Authorization':`Bearer ${token}`,
-          'Accept':'application/vnd.github.v3+json'
-        }
-      });
+      const metaRes = await fetch(url,{
+        headers:{
+          'Authorization':`Bearer ${token}`,
+          'Accept':'application/vnd.github.v3+json'
+        }
+      });
 
-      if(metaRes.ok){
-        const meta = await metaRes.json();
-        sha = meta.sha;
-      }
+      if(metaRes.ok){
+        const meta = await metaRes.json();
+        sha = meta.sha;
+      }
 
-      const jsonContent = JSON.stringify(reviews,null,2);
-      const base64Content = btoa(new TextEncoder().encode(jsonContent).reduce((d,b)=>d+String.fromCharCode(b),''));
+      const jsonContent = JSON.stringify(reviews,null,2);
+      const base64Content = btoa(new TextEncoder().encode(jsonContent).reduce((d,b)=>d+String.fromCharCode(b),''));
 
-      const body = { message:`Update reviews ${new Date().toISOString()}`, content:base64Content };
-      if(sha) body.sha = sha;
+      const body = { message:`Update reviews ${new Date().toISOString()}`, content:base64Content };
+      if(sha) body.sha = sha;
 
-      const res = await fetch(url,{
-        method:'PUT',
-        headers:{
-          'Authorization':`Bearer ${token}`,
-          'Accept':'application/vnd.github.v3+json',
-          'Content-Type':'application/json'
-        },
-        body:JSON.stringify(body)
-      });
+      const res = await fetch(url,{
+        method:'PUT',
+        headers:{
+          'Authorization':`Bearer ${token}`,
+          'Accept':'application/vnd.github.v3+json',
+          'Content-Type':'application/json'
+        },
+        body:JSON.stringify(body)
+      });
 
-      if(!res.ok) throw new Error(`Failed to save reviews: ${res.status}`);
-      return await res.json();
-    },
+      if(!res.ok) throw new Error(`Failed to save reviews: ${res.status}`);
+      return await res.json();
+    },
 
-    async uploadImage(file,token){
-      const sanitized = file.name.replace(/[^a-zA-Z0-9.-]/g,'_');
-      const timestamp = Date.now();
-      const fileName = `images/${timestamp}_${sanitized}`;
-      const url = this._getApiUrl(fileName);
+    async uploadImage(file,token){
+      const sanitized = file.name.replace(/[^a-zA-Z0-9.-]/g,'_');
+      const timestamp = Date.now();
+      const fileName = `images/${timestamp}_${sanitized}`;
+      const url = this._getApiUrl(fileName);
 
-      const base64Content = await new Promise((resolve,reject)=>{
-        const reader = new FileReader();
-        reader.onload = ()=>resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      const base64Content = await new Promise((resolve,reject)=>{
+        const reader = new FileReader();
+        reader.onload = ()=>resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
-      const body = {
-        message:`Upload image ${file.name}`,
-        content:base64Content
-      };
+      const body = {
+        message:`Upload image ${file.name}`,
+        content:base64Content
+      };
 
-      const res = await fetch(url,{
-        method:'PUT',
-        headers:{
-          'Authorization':`Bearer ${token}`,
-          'Accept':'application/vnd.github.v3+json'
-        },
-        body:JSON.stringify(body)
-      });
+      const res = await fetch(url,{
+        method:'PUT',
+        headers:{
+          'Authorization':`Bearer ${token}`,
+          'Accept':'application/vnd.github.v3+json'
+        },
+        body:JSON.stringify(body)
+      });
 
-      if(!res.ok) throw new Error(`Image upload failed: ${res.status}`);
-      const data = await res.json();
-      return data.content.download_url;
-    }
-  };
+      if(!res.ok) throw new Error(`Image upload failed: ${res.status}`);
+      const data = await res.json();
+      return data.content.download_url;
+    }
+  };
 
   // --- UIManager ---
   const UIManager = {
