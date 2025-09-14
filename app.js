@@ -304,21 +304,36 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             });
 
-            UIManager.imageUpload.addEventListener("change", e => {
-                const file = e.target.files[0];
-                this.setState({ imageFile: file || null });
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = ev => {
-                        UIManager.imagePreview.src = ev.target.result;
-                        UIManager.imagePreview.classList.remove('hidden');
-                    };
-                    reader.readAsDataURL(file);
-                } else {
-                    UIManager.imagePreview.src = '';
-                    UIManager.imagePreview.classList.add('hidden');
-                }
-            });
+UIManager.imageUpload.addEventListener("change", e => {
+    const file = e.target.files[0];
+    this.setState({ imageFile: file || null });
+
+    if (file) {
+        // Set the app to a busy state immediately
+        this.setState({ isBusy: true });
+        UIManager.showToast("Loading image preview...");
+
+        const reader = new FileReader();
+
+        reader.onload = ev => {
+            UIManager.imagePreview.src = ev.target.result;
+            UIManager.imagePreview.classList.remove('hidden');
+            // IMPORTANT: Re-enable the form once the preview is ready
+            this.setState({ isBusy: false }); 
+        };
+
+        reader.onerror = () => {
+            UIManager.showToast("Failed to read image file.", true);
+            // Also re-enable the form on failure
+            this.setState({ isBusy: false }); 
+        };
+
+        reader.readAsDataURL(file);
+    } else {
+        UIManager.imagePreview.src = '';
+        UIManager.imagePreview.classList.add('hidden');
+    }
+});
 
             UIManager.addTab.addEventListener("click", () => this.setState({ activeTab: 'add' }));
             UIManager.readTab.addEventListener("click", () => this.setState({ activeTab: 'read' }));
