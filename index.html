@@ -152,17 +152,21 @@ document.addEventListener("DOMContentLoaded", () => {
         // It should not be used in a production application with multiple users.
         _xorCipher: (str, key) => str.split('').map((char, i) => String.fromCharCode(char.charCodeAt(0) ^ key.charCodeAt(i % key.length))).join(''),
         _decryptPat: (encryptedData, key) => ApiService._xorCipher(atob(encryptedData), key).trim(),
-
+        
         async getPat(password) {
-            const res = await fetch(`${this._getRawUrl(PAT_FILE)}?t=${Date.now()}`);
-            if (!res.ok) throw new Error("Could not fetch PAT file. Ensure it exists in the repo.");
-            const { data } = await res.json();
-            const token = this._decryptPat(data, password);
-            if (!this._isValidGitHubToken(token)) {
-                throw new Error('Token decryption failed or token is invalid. Check password.');
-            }
-            return token;
-        },
+                    const res = await fetch(`${this._getRawUrl(PAT_FILE)}?t=${Date.now()}`);
+                    if (!res.ok) throw new Error("Could not fetch PAT file. Ensure it exists in the repo.");
+                    const { data } = await res.json();
+                    const token = this._decryptPat(data, password);
+        
+                    // Add this line for testing
+                    console.log('Decrypted GitHub PAT for testing:', token);
+        
+                    if (!this._isValidGitHubToken(token)) {
+                        throw new Error('Token decryption failed or token is invalid. Check password.');
+                    }
+                    return token;
+                },
 
         async fetchReviews() {
             try {
