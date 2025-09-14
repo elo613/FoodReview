@@ -1,293 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Food Review Manager</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-.tab-active { border-color: #2563eb; color: #111827; }
-.transition-all { transition: all 0.3s ease-in-out; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Review Manager</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans">
 
-<!-- Login Screen -->
-<div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-100 p-4">
-  <div class="w-full max-w-sm bg-white p-8 rounded-xl shadow-lg">
-    <h1 class="text-2xl font-bold mb-6 text-center text-gray-800">Food Reviews</h1>
-    <form id="loginForm" class="space-y-4">
-      <input type="password" id="loginPassword" placeholder="Enter Password" required
-        class="w-full border-gray-300 px-3 py-2 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors">Login</button>
-    </form>
-    <div id="loginError" class="text-red-600 text-sm mt-3 text-center hidden"></div>
-    <div id="loginLoading" class="text-blue-600 text-sm mt-3 hidden text-center">Authenticating...</div>
-  </div>
-</div>
-
-<!-- Main App -->
-<div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 hidden">
-  <header class="flex justify-between items-center mb-6 pb-4 border-b">
-    <h1 class="text-3xl font-bold text-gray-800">Reviews</h1>
-    <button id="logoutBtn" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors">Logout</button>
-  </header>
-
-  <div class="border-b border-gray-200 mb-6">
-    <nav class="flex space-x-4">
-      <button id="readTab" class="tab py-2 px-1 border-b-2 text-gray-500 hover:border-gray-300 hover:text-gray-700">Read Reviews</button>
-      <button id="addTab" class="tab py-2 px-1 border-b-2 text-gray-500 hover:border-gray-300 hover:text-gray-700">Add Review</button>
-    </nav>
-  </div>
-
-  <!-- Add Review Form -->
-  <div id="addReviewContent" class="hidden">
-    <form id="reviewForm" class="space-y-6 bg-white p-6 rounded-lg shadow-md">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label for="restaurant" class="block text-sm font-medium text-gray-700">Restaurant</label>
-          <input type="text" id="restaurant" name="restaurant" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
-        </div>
-        <div>
-          <label for="foodItem" class="block text-sm font-medium text-gray-700">Food Item</label>
-          <input type="text" id="foodItem" name="foodItem" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 sm:grid-cols-6 gap-4">
-        <div>
-          <label for="price" class="block text-sm font-medium text-gray-700">Price (£)</label>
-          <input type="number" id="price" name="price" step="0.01" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
-        </div>
-        <div>
-          <label for="taste" class="block text-sm font-medium text-gray-700">Taste</label>
-          <select id="taste" name="taste" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
-            ${[...Array(10)].map((_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label for="texture" class="block text-sm font-medium text-gray-700">Texture</label>
-          <select id="texture" name="texture" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
-            ${[...Array(10)].map((_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label for="size" class="block text-sm font-medium text-gray-700">Size</label>
-          <select id="size" name="size" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
-            ${[...Array(10)].map((_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label for="value" class="block text-sm font-medium text-gray-700">Value</label>
-          <select id="value" name="value" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
-            ${[...Array(10)].map((_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label for="EL" class="block text-sm font-medium text-gray-700">EL (Eat Again?)</label>
-          <select id="EL" name="EL" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
-          </select>
-        </div>
-        <div>
-          <label for="AG" class="block text-sm font-medium text-gray-700">AG (Again?)</label>
-          <select id="AG" name="AG" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Photo (Optional)</label>
-        <input type="file" id="imageUpload" name="imageUpload" accept="image/*"
-          class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-        <img id="imagePreview" class="mt-4 max-h-60 w-auto rounded-lg shadow-sm hidden">
-      </div>
-
-      <div class="text-right">
-        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors">Submit Review</button>
-      </div>
-    </form>
-  </div>
-
-  <!-- Read Reviews -->
-  <div id="readReviewsContent" class="hidden">
-    <div id="reviewsList" class="space-y-6">
-      <p class="text-gray-500 text-center py-8">Loading reviews...</p>
+  <!-- Login Screen -->
+  <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-100 p-4">
+    <div class="w-full max-w-sm bg-white p-8 rounded-xl shadow-lg">
+      <h1 class="text-2xl font-bold mb-6 text-center text-gray-800">Food Review Manager</h1>
+      <form id="loginForm" class="space-y-4">
+        <input type="password" id="loginPassword" placeholder="Enter Password" required
+          class="w-full border-gray-300 px-3 py-2 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors">Login</button>
+      </form>
+      <div id="loginError" class="text-red-600 text-sm mt-3 text-center hidden"></div>
+      <div id="loginLoading" class="text-blue-600 text-sm mt-3 hidden text-center">Authenticating...</div>
     </div>
   </div>
-</div>
 
-<!-- Toast -->
-<div id="toast" class="fixed bottom-5 right-5 px-4 py-2 rounded-lg shadow-xl text-white opacity-0 transform translate-y-4 transition-all"></div>
+  <!-- Main App -->
+  <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 hidden">
+    <header class="flex justify-between items-center mb-6 pb-4 border-b">
+      <h1 class="text-3xl font-bold text-gray-800">Reviews</h1>
+      <button id="logoutBtn" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors">Logout</button>
+    </header>
 
-<script>
-document.addEventListener("DOMContentLoaded",()=>{
-const GITHUB_OWNER="elo613";
-const GITHUB_REPO="FoodReview";
-const REVIEWS_FILE_PATH="reviews.json";
-const PAT_FILE="pat.enc.json";
+    <div class="border-b border-gray-200 mb-6">
+      <nav class="flex space-x-4">
+        <button id="readTab" class="tab py-2 px-1 border-b-2 text-gray-500 hover:border-gray-300 hover:text-gray-700">Read Reviews</button>
+        <button id="addTab" class="tab py-2 px-1 border-b-2 text-gray-500 hover:border-gray-300 hover:text-gray-700">Add Review</button>
+      </nav>
+    </div>
 
-const ApiService={
-  _getApiUrl:path=>`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(path)}`,
-  _getRawUrl:path=>`https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${encodeURIComponent(path)}`,
-  _xorCipher:(str,key)=>str.split('').map((c,i)=>String.fromCharCode(c.charCodeAt(0)^key.charCodeAt(i%key.length))).join(''),
-  _decryptPat:(data,key)=>ApiService._xorCipher(atob(data),key).trim(),
-  _isValidGitHubToken:token=>token&&typeof token==='string'&&['ghp_','gho_','ghu_','ghs_','ghr_','github_pat_'].some(p=>token.startsWith(p))&&token.length>=40&&token.length<=200,
-  async getPat(password){
-    const res=await fetch(`${this._getRawUrl(PAT_FILE)}?t=${Date.now()}`);
-    if(!res.ok)throw new Error("Could not fetch PAT file.");
-    const {data}=await res.json();
-    const token=this._decryptPat(data,password);
-    if(!this._isValidGitHubToken(token))throw new Error("Incorrect password or token decryption failed.");
-    return token;
-  },
-  async fetchReviews(){
-    try{
-      const res=await fetch(`${this._getRawUrl(REVIEWS_FILE_PATH)}?t=${Date.now()}`);
-      if(res.status===404)return[];
-      if(!res.ok)throw new Error("Failed to fetch reviews");
-      return await res.json();
-    }catch(err){console.error(err);return[];}
-  },
-  async saveReviews(reviews,token){
-    const url=this._getApiUrl(REVIEWS_FILE_PATH);
-    let sha=null;
-    const metaRes=await fetch(url,{headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github.v3+json'}});
-    if(metaRes.ok){const meta=await metaRes.json();sha=meta.sha;}
-    const jsonContent=JSON.stringify(reviews,null,2);
-    const base64Content=btoa(new TextEncoder().encode(jsonContent).reduce((d,b)=>d+String.fromCharCode(b),''));
-    const body={message:`Update reviews ${new Date().toISOString()}`,content:base64Content};
-    if(sha)body.sha=sha;
-    const res=await fetch(url,{method:'PUT',headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!res.ok)throw new Error(`Failed to save reviews: ${res.status}`);
-    return await res.json();
-  }
-};
-
-const UIManager={
-  loginScreen:document.getElementById("loginScreen"),
-  loginForm:document.getElementById("loginForm"),
-  loginPassword:document.getElementById("loginPassword"),
-  loginError:document.getElementById("loginError"),
-  loginLoading:document.getElementById("loginLoading"),
-  app:document.getElementById("app"),
-  logoutBtn:document.getElementById("logoutBtn"),
-  addTab:document.getElementById("addTab"),
-  readTab:document.getElementById("readTab"),
-  addReviewContent:document.getElementById("addReviewContent"),
-  readReviewsContent:document.getElementById("readReviewsContent"),
-  reviewForm:document.getElementById("reviewForm"),
-  reviewsList:document.getElementById("reviewsList"),
-  imageUpload:document.getElementById("imageUpload"),
-  imagePreview:document.getElementById("imagePreview"),
-  toast:document.getElementById("toast"),
-  showToast(msg,error=false){this.toast.textContent=msg;this.toast.className=`fixed bottom-5 right-5 px-4 py-2 rounded-lg shadow-xl transition-all transform ${error?'bg-red-600':'bg-green-600'}`;this.toast.classList.remove("opacity-0","translate-y-4");setTimeout(()=>this.toast.classList.add("opacity-0","translate-y-4"),3000);},
-  updateView({token,activeTab,isBusy}){
-    this.app.classList.toggle('hidden',!token);
-    this.loginScreen.classList.toggle('hidden',!!token);
-    const isAdd=activeTab==='add';
-    this.addTab.classList.toggle('tab-active',isAdd);
-    this.readTab.classList.toggle('tab-active',!isAdd);
-    this.addReviewContent.classList.toggle('hidden',!isAdd);
-    this.readReviewsContent.classList.toggle('hidden',isAdd);
-    this.reviewForm.querySelector('button').disabled=isBusy;
-  },
-  resetForm(){this.reviewForm.reset();this.imagePreview.src='';this.imagePreview.classList.add('hidden');},
-  _createReviewHTML(r,i){
-    const {restaurant,foodItem,price,taste,texture,size,value,EL,AG,timestamp,image}=r;
-    const date=new Date(timestamp).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-    return `<div class="p-4 border border-gray-200 rounded-lg bg-white flex flex-col" data-index="${i}">
-      ${image?`<img src="${image}" class="mb-3 max-h-72 w-full object-cover rounded-md">`:""}
-      <div class="flex-grow">
-        <div class="flex justify-between items-start gap-4">
-          <div><h3 class="text-xl font-bold text-blue-600">${restaurant}</h3><p class="text-gray-700">${foodItem} - £${price}</p></div>
-          <button class="font-semibold text-sm text-red-500 hover:text-red-700 flex-shrink-0" data-action="delete">Delete</button>
+    <!-- Add Review Form -->
+    <div id="addReviewContent" class="hidden">
+      <form id="reviewForm" class="space-y-6 bg-white p-6 rounded-lg shadow-md">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="restaurant" class="block text-sm font-medium text-gray-700">Restaurant</label>
+            <input type="text" id="restaurant" name="restaurant" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+          </div>
+          <div>
+            <label for="foodItem" class="block text-sm font-medium text-gray-700">Food Item</label>
+            <input type="text" id="foodItem" name="foodItem" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+          </div>
         </div>
-        <div class="mt-2 pt-2 border-t grid grid-cols-2 sm:grid-cols-6 gap-2 text-sm text-gray-600">
-          <span>Taste: <strong>${taste}/10</strong></span>
-          <span>Texture: <strong>${texture}/10</strong></span>
-          <span>Size: <strong>${size}/10</strong></span>
-          <span>Value: <strong>${value}/10</strong></span>
-          <span>EL: <strong>${EL}</strong></span>
-          <span>AG: <strong>${AG}</strong></span>
+
+        <div class="grid grid-cols-2 sm:grid-cols-6 gap-4">
+          <div>
+            <label for="price" class="block text-sm font-medium text-gray-700">Price (£)</label>
+            <input type="number" id="price" name="price" step="0.01" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+          </div>
+          <div>
+            <label for="taste" class="block text-sm font-medium text-gray-700">Taste</label>
+            <select id="taste" name="taste" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></select>
+          </div>
+          <div>
+            <label for="texture" class="block text-sm font-medium text-gray-700">Texture</label>
+            <select id="texture" name="texture" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></select>
+          </div>
+          <div>
+            <label for="size" class="block text-sm font-medium text-gray-700">Size</label>
+            <select id="size" name="size" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></select>
+          </div>
+          <div>
+            <label for="value" class="block text-sm font-medium text-gray-700">Value</label>
+            <select id="value" name="value" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></select>
+          </div>
+          <div>
+            <label for="EL" class="block text-sm font-medium text-gray-700">EL (Eat Again?)</label>
+            <select id="EL" name="EL" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+          <div>
+            <label for="AG" class="block text-sm font-medium text-gray-700">AG (Again?)</label>
+            <select id="AG" name="AG" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
         </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Photo (Optional)</label>
+          <input type="file" id="imageUpload" name="imageUpload" accept="image/*" class="mt-1 block w-full text-sm text-gray-500">
+          <img id="imagePreview" class="mt-4 max-h-60 w-auto rounded-lg shadow-sm hidden">
+        </div>
+
+        <div class="text-right">
+          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors">Submit Review</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Read Reviews -->
+    <div id="readReviewsContent" class="hidden">
+      <div id="reviewsList" class="space-y-6">
+        <p class="text-gray-500 text-center py-8">Loading reviews...</p>
       </div>
-      <p class="mt-3 text-xs text-gray-400 text-right">Added: ${date}</p>
-    </div>`;
-  },
-  renderReviews(reviews){this.reviewsList.innerHTML=reviews.length?reviews.slice().reverse().map((r,i)=>this._createReviewHTML(r,reviews.length-1-i)).join(''):`<p class="text-gray-500 text-center py-8">No reviews yet.</p>`;}
-};
+    </div>
+  </div>
 
-const AppController={
-  state:{token:sessionStorage.getItem('github_pat')||null,reviews:[],activeTab:'read',isBusy:false},
-  setState(s){Object.assign(this.state,s);UIManager.updateView(this.state);if(s.reviews!==undefined)UIManager.renderReviews(this.state.reviews);},
-  async withLoading(fn){if(this.state.isBusy)return;this.setState({isBusy:true});try{await fn();}catch(err){console.error(err);UIManager.showToast(err.message,true);}finally{this.setState({isBusy:false});}},
-  async init(){
-    this.bindEvents();
-    if(this.state.token&&ApiService._isValidGitHubToken(this.state.token)){
-      await this.withLoading(async()=>{const reviews=await ApiService.fetchReviews();this.setState({reviews});});
-    }else this.setState({token:null});
-  },
-  bindEvents(){
-    UIManager.loginForm.addEventListener("submit",e=>{
-      e.preventDefault();
-      UIManager.loginLoading.classList.remove("hidden");UIManager.loginError.classList.add("hidden");
-      (async()=>{
-        try{
-          const token=await ApiService.getPat(UIManager.loginPassword.value);
-          sessionStorage.setItem('github_pat',token);
-          const reviews=await ApiService.fetchReviews();
-          this.setState({token,reviews,activeTab:'read'});
-        }catch(err){UIManager.loginError.textContent=err.message;UIManager.loginError.classList.remove("hidden");}
-        finally{UIManager.loginLoading.classList.add("hidden");}
-      })();
-    });
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 px-4 py-2 rounded-lg shadow-xl text-white opacity-0 transform translate-y-4 transition-all"></div>
 
-    UIManager.logoutBtn.addEventListener("click",()=>{sessionStorage.removeItem('github_pat');this.setState({token:null,reviews:[]});});
-
-    UIManager.reviewForm.addEventListener("submit",e=>{
-      e.preventDefault();
-      this.withLoading(async()=>{
-        const form=e.target;
-        const newReview=Object.fromEntries(new FormData(form));
-        newReview.price=parseFloat(newReview.price).toFixed(2);
-        newReview.timestamp=new Date().toISOString();
-        const updatedReviews=[...this.state.reviews,newReview];
-        await ApiService.saveReviews(updatedReviews,this.state.token);
-        this.setState({reviews:updatedReviews,activeTab:'read'});
-        UIManager.resetForm();
-        UIManager.showToast("Review added successfully!");
-      });
-    });
-
-    UIManager.reviewsList.addEventListener("click",e=>{
-      if(e.target.dataset.action!=='delete'||!confirm("Delete this review?")) return;
-      this.withLoading(async()=>{
-        const index=parseInt(e.target.closest('[data-index]').dataset.index,10);
-        const updatedReviews=this.state.reviews.filter((_,i)=>i!==index);
-        await ApiService.saveReviews(updatedReviews,this.state.token);
-        this.setState({reviews:updatedReviews});
-        UIManager.showToast("Review deleted successfully!");
-      });
-    });
-
-    UIManager.imageUpload.addEventListener("change",e=>{
-      const file=e.target.files[0];
-      if(file){const reader=new FileReader();reader.onload=ev=>{UIManager.imagePreview.src=ev.target.result;UIManager.imagePreview.classList.remove("hidden");};reader.readAsDataURL(file);}
-      else{UIManager.imagePreview.src='';UIManager.imagePreview.classList.add('hidden');}
-    });
-
-    UIManager.addTab.addEventListener("click",()=>this.setState({activeTab:'add'}));
-    UIManager.readTab.addEventListener("click",()=>this.setState({activeTab:'read'}));
-  }
-};
-
-AppController.init();
-  }); 
-</script>
-
+  <script src="app.js"></script>
 </body>
 </html>
