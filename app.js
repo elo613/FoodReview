@@ -544,7 +544,7 @@ UIManager.imageUpload.addEventListener("change", async (e) => {
             cleanUp();
         }
     });
-});
+};
 
     AppController.init();
 });
