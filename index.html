@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Review Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .tab-active {
+            border-bottom-color: #3b82f6; /* blue-500 */
+            color: #3b82f6;
+        }
+        .tab {
+            border-bottom-color: transparent;
+        }
+        .tab-content {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Hide the default file input */
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Food Review Manager</h1>
+            <p class="text-gray-600 mt-2">Your personal journal for every meal.</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="mb-6 border-b border-gray-200">
+            <nav class="flex -mb-px space-x-6" aria-label="Tabs">
+                <button id="addTab" class="tab tab-active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm focus:outline-none">
+                    Add Review
+                </button>
+                <button id="readTab" class="tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none">
+                    Read Reviews
+                </button>
+            </nav>
+        </div>
+
+        <!-- Tab Content -->
+        <main>
+            <!-- Add Review Tab Content -->
+            <div id="addReviewContent" class="tab-content bg-white p-6 rounded-lg shadow-md">
+                <form id="reviewForm" class="space-y-6">
+                    <!-- Restaurant & Food Item -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="restaurant" class="block text-sm font-medium text-gray-700">Restaurant</label>
+                            <input type="text" id="restaurant" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="foodItem" class="block text-sm font-medium text-gray-700">Food Item</label>
+                            <input type="text" id="foodItem" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        </div>
+                    </div>
+                    
+                    <!-- Price -->
+                    <div>
+                        <label for="price" class="block text-sm font-medium text-gray-700">Price (£)</label>
+                        <input type="number" id="price" step="0.01" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    </div>
+
+                    <!-- Image Upload -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Photo</label>
+                        <div class="mt-1 flex items-center gap-4">
+                            <!-- Custom button for file input -->
+                            <label for="imageUpload" class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                Choose Image
+                            </label>
+                            <!-- The 'capture' attribute suggests using the camera on mobile devices -->
+                            <input type="file" id="imageUpload" accept="image/*" capture="environment">
+                            <p id="fileName" class="text-sm text-gray-500">No file chosen</p>
+                        </div>
+                        <div class="mt-4">
+                            <img id="imagePreview" src="" alt="Image Preview" class="hidden max-h-60 rounded-lg shadow-sm"/>
+                        </div>
+                    </div>
+
+                    <!-- Ratings -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        <div>
+                            <label for="taste" class="block text-sm font-medium text-gray-700">Taste (1-10)</label>
+                            <select id="taste" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select>
+                        </div>
+                        <div>
+                            <label for="texture" class="block text-sm font-medium text-gray-700">Texture (1-10)</label>
+                            <select id="texture" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select>
+                        </div>
+                        <div>
+                            <label for="size" class="block text-sm font-medium text-gray-700">Size (1-10)</label>
+                            <select id="size" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select>
+                        </div>
+                        <div>
+                            <label for="value" class="block text-sm font-medium text-gray-700">Value (1-10)</label>
+                            <select id="value" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select>
+                        </div>
+                    </div>
+
+                    <!-- Would Eat Here Again -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <fieldset>
+                            <legend class="text-sm font-medium text-gray-700">Would eat here again? (EL)</legend>
+                            <div class="mt-2 space-x-4">
+                                <label class="inline-flex items-center"><input type="radio" name="eatAgainEL" value="Yes" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"><span class="ml-2">Yes</span></label>
+                                <label class="inline-flex items-center"><input type="radio" name="eatAgainEL" value="No" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" checked><span class="ml-2">No</span></label>
+                            </div>
+                        </fieldset>
+                        <fieldset>
+                            <legend class="text-sm font-medium text-gray-700">Would eat here again? (AG)</legend>
+                            <div class="mt-2 space-x-4">
+                                <label class="inline-flex items-center"><input type="radio" name="eatAgainAG" value="Yes" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"><span class="ml-2">Yes</span></label>
+                                <label class="inline-flex items-center"><input type="radio" name="eatAgainAG" value="No" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" checked><span class="ml-2">No</span></label>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex justify-end">
+                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Save Review
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Read Reviews Tab Content -->
+            <div id="readReviewsContent" class="tab-content hidden">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <h2 class="text-2xl font-semibold text-gray-800">Your Reviews</h2>
+                        <div class="flex items-center gap-2">
+                             <label for="fileInput" class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                Load from File
+                            </label>
+                            <input type="file" id="fileInput" accept=".json">
+                            <button id="saveToFileBtn" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                                Save to File
+                            </button>
+                        </div>
+                    </div>
+                    <div id="reviewsList" class="space-y-6">
+                        <p class="text-gray-500 text-center py-8">No reviews yet. Add one to get started!</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Toast Notification -->
+        <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300">
+            <p id="toastMessage"></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const addTab = document.getElementById('addTab');
+            const readTab = document.getElementById('readTab');
+            const addReviewContent = document.getElementById('addReviewContent');
+            const readReviewsContent = document.getElementById('readReviewsContent');
+            const reviewForm = document.getElementById('reviewForm');
+            const reviewsList = document.getElementById('reviewsList');
+            const saveToFileBtn = document.getElementById('saveToFileBtn');
+            const fileInput = document.getElementById('fileInput');
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const imageUpload = document.getElementById('imageUpload');
+            const imagePreview = document.getElementById('imagePreview');
+            const fileName = document.getElementById('fileName');
+
+            // App State
+            let reviews = [];
+            let currentImageDataUrl = null;
+
+            // --- Initialization ---
+            const init = () => {
+                ['taste', 'texture', 'size', 'value'].forEach(id => {
+                    const select = document.getElementById(id);
+                    for (let i = 1; i <= 10; i++) {
+                        const option = document.createElement('option');
+                        option.value = i;
+                        option.textContent = i;
+                        select.appendChild(option);
+                    }
+                });
+                
+                const storedReviews = localStorage.getItem('foodReviews');
+                if(storedReviews) {
+                    reviews = JSON.parse(storedReviews);
+                    renderReviews();
+                }
+            };
+            
+            // --- Tab Management ---
+            const switchTab = (activeTab) => {
+                if(activeTab === 'add') {
+                    addTab.classList.add('tab-active');
+                    readTab.classList.remove('tab-active');
+                    addReviewContent.classList.remove('hidden');
+                    readReviewsContent.classList.add('hidden');
+                } else {
+                    readTab.classList.add('tab-active');
+                    addTab.classList.remove('tab-active');
+                    readReviewsContent.classList.remove('hidden');
+                    addReviewContent.classList.add('hidden');
+                    renderReviews();
+                }
+            };
+
+            // --- Image Handling ---
+            const handleImageUpload = (event) => {
+                const file = event.target.files[0];
+                if (!file) {
+                    currentImageDataUrl = null;
+                    imagePreview.classList.add('hidden');
+                    fileName.textContent = 'No file chosen';
+                    return;
+                }
+                
+                fileName.textContent = file.name;
+
+                // Resize and convert image to Data URL to save space
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        const MAX_HEIGHT = 800;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Use JPEG for better compression, quality 0.8
+                        currentImageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                        imagePreview.src = currentImageDataUrl;
+                        imagePreview.classList.remove('hidden');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+
+            // --- Review Management ---
+            const renderReviews = () => {
+                reviewsList.innerHTML = '';
+                if (reviews.length === 0) {
+                    reviewsList.innerHTML = '<p class="text-gray-500 text-center py-8">No reviews yet. Add a review or load a file!</p>';
+                    return;
+                }
+                
+                reviews.slice().reverse().forEach((review, index) => { // Show newest first
+                    const actualIndex = reviews.length - 1 - index;
+                    const reviewElement = document.createElement('div');
+                    reviewElement.className = 'p-4 border rounded-lg bg-gray-50 shadow-sm';
+                    
+                    const imageHTML = review.imageDataUrl ? `<img src="${review.imageDataUrl}" alt="${review.foodItem}" class="mt-4 w-full h-auto max-h-80 object-cover rounded-md">` : '';
+
+                    reviewElement.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-xl font-bold text-blue-600">${review.restaurant}</h3>
+                                <p class="text-md text-gray-800">${review.foodItem}</p>
+                                <p class="text-sm text-gray-600">Price: £${review.price}</p>
+                            </div>
+                            <button data-index="${actualIndex}" class="delete-btn text-2xl font-bold text-gray-400 hover:text-red-500 focus:outline-none">&times;</button>
+                        </div>
+                        <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                            <div><span class="font-semibold">Taste:</span> ${review.taste}/10</div>
+                            <div><span class="font-semibold">Texture:</span> ${review.texture}/10</div>
+                            <div><span class="font-semibold">Size:</span> ${review.size}/10</div>
+                            <div><span class="font-semibold">Value:</span> ${review.value}/10</div>
+                        </div>
+                         <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+                            <p><span class="font-semibold">Eat again? (EL):</span> ${review.eatAgainEL}</p>
+                            <p><span class="font-semibold">Eat again? (AG):</span> ${review.eatAgainAG}</p>
+                        </div>
+                        ${imageHTML}
+                    `;
+                    reviewsList.appendChild(reviewElement);
+                });
+            };
+
+            const addReview = (e) => {
+                e.preventDefault();
+                const newReview = {
+                    restaurant: document.getElementById('restaurant').value,
+                    foodItem: document.getElementById('foodItem').value,
+                    price: parseFloat(document.getElementById('price').value).toFixed(2),
+                    taste: document.getElementById('taste').value,
+                    texture: document.getElementById('texture').value,
+                    size: document.getElementById('size').value,
+                    value: document.getElementById('value').value,
+                    eatAgainEL: document.querySelector('input[name="eatAgainEL"]:checked').value,
+                    eatAgainAG: document.querySelector('input[name="eatAgainAG"]:checked').value,
+                    imageDataUrl: currentImageDataUrl
+                };
+                reviews.push(newReview);
+                saveToLocalStorage();
+                
+                // Reset form
+                reviewForm.reset();
+                currentImageDataUrl = null;
+                imagePreview.src = '';
+                imagePreview.classList.add('hidden');
+                fileName.textContent = 'No file chosen';
+                
+                showToast('Review added successfully!');
+                switchTab('read');
+            };
+            
+            const deleteReview = (index) => {
+                reviews.splice(index, 1);
+                saveToLocalStorage();
+                renderReviews();
+                showToast('Review deleted.');
+            };
+
+            // --- Data Persistence ---
+            const saveToLocalStorage = () => localStorage.setItem('foodReviews', JSON.stringify(reviews));
+            const saveToFile = () => {
+                if (reviews.length === 0) {
+                    showToast('No reviews to save.', 'error'); return;
+                }
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(reviews, null, 2));
+                const dl = document.createElement('a');
+                dl.setAttribute("href", dataStr);
+                dl.setAttribute("download", "food_reviews.json");
+                dl.click();
+                dl.remove();
+                showToast('Reviews saved to food_reviews.json');
+            };
+            const loadFromFile = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const loadedReviews = JSON.parse(e.target.result);
+                        if (Array.isArray(loadedReviews)) {
+                           reviews = loadedReviews;
+                           saveToLocalStorage();
+                           renderReviews();
+                           showToast('Reviews loaded successfully!');
+                           switchTab('read');
+                        } else { throw new Error("Invalid format"); }
+                    } catch (error) { showToast('Could not load file. Invalid JSON format.', 'error'); }
+                };
+                reader.readAsText(file);
+                fileInput.value = '';
+            };
+            
+            // --- UI Helpers ---
+            let toastTimer;
+            const showToast = (message, type = 'success') => {
+                clearTimeout(toastTimer);
+                toastMessage.textContent = message;
+                toast.className = `fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transform transition-all duration-300 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'} translate-y-0 opacity-100`;
+                toastTimer = setTimeout(() => {
+                    toast.className = toast.className.replace('translate-y-0 opacity-100', 'translate-y-20 opacity-0');
+                }, 3000);
+            }
+
+            // --- Event Listeners ---
+            addTab.addEventListener('click', () => switchTab('add'));
+            readTab.addEventListener('click', () => switchTab('read'));
+            reviewForm.addEventListener('submit', addReview);
+            saveToFileBtn.addEventListener('click', saveToFile);
+            fileInput.addEventListener('change', loadFromFile);
+            imageUpload.addEventListener('change', handleImageUpload);
+            reviewsList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-btn')) {
+                    const index = e.target.dataset.index;
+                    if(confirm('Are you sure you want to delete this review?')) {
+                        deleteReview(index);
+                    }
+                }
+            });
+
+            init();
+        });
+    </script>
+</body>
+</html>
+
