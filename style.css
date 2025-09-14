@@ -1,76 +1,63 @@
-/* Active tab */
+/* General Styling */
 .tab-active {
   border-color: #2563eb; /* blue-600 */
   color: #111827;        /* gray-900 */
   font-weight: 600;
 }
 
-/* Smooth transition for interactive elements */
 .transition-all {
   transition: all 0.3s ease-in-out;
 }
 
-/* Toast notifications */
+/* Toast Notification Styling */
 #toast {
   opacity: 0;
   transform: translateY(1rem);
   transition: all 0.3s ease-in-out;
 }
 
-/* Login error message */
+/* Login Screen Styling */
 #loginError {
-  display: none;
   color: #dc2626; /* red-600 */
-  font-size: 0.875rem;
-  text-align: center;
-  margin-top: 0.75rem;
 }
 
-/* Login loading */
 #loginLoading {
-  display: none;
   color: #2563eb; /* blue-600 */
-  font-size: 0.875rem;
-  text-align: center;
-  margin-top: 0.75rem;
 }
 
-/* Image preview styling */
+/* Image Preview Styling */
 #imagePreview {
   max-height: 15rem; /* 240px */
   width: auto;
   border-radius: 0.375rem; /* rounded-lg */
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  display: none;
+  transition: opacity 0.3s ease;
 }
 
-/* Optional: hover effect for review delete button */
-[data-action="delete"] {
-  cursor: pointer;
-  transition: color 0.2s;
+/* NEW: Style for when the preview image is being processed */
+#imagePreview.loading {
+  opacity: 0.6;
+  background-color: #f3f4f6; /* gray-100 */
 }
 
+/* Delete Button Hover Effect */
 [data-action="delete"]:hover {
   color: #b91c1c; /* red-700 */
 }
 
-/* Optional: responsive adjustments for form */
-@media (max-width: 640px) {
-  #addReviewContent form .grid-cols-2 {
-    grid-template-columns: 1fr;
-  }
-}
+/* --- Loading Spinner and Button States --- */
 
-/* Add this to the bottom of your style.css file */
-
+/* Base button style for alignment */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0.5rem; /* Optional: space between text and spinner if both were shown */
 }
 
+/* Spinner element, hidden by default */
 .spinner {
-    display: none; /* Hidden by default */
+    display: none;
     width: 20px;
     height: 20px;
     border: 3px solid rgba(255, 255, 255, 0.3);
@@ -79,27 +66,21 @@
     animation: spin 1s ease-in-out infinite;
 }
 
-/* Loading State */
-.btn.loading .spinner {
-    display: block; /* Show spinner when loading */
-}
-
-.btn.loading .btn-text {
-    display: none; /* Hide text when loading */
-}
-
-/* Spinner Animation */
+/* Keyframe animation for the spinner rotation */
 @keyframes spin {
     to {
         transform: rotate(360deg);
     }
 }
 
-#imagePreview {
-    transition: opacity 0.3s ease;
+/* --- Styles for the 'loading' state --- */
+
+/* When the button has the .loading class, show the spinner */
+.btn.loading .spinner {
+    display: block;
 }
 
-#imagePreview.loading {
-    opacity: 0.6;
-    background: #f3f4f6;
+/* When the button has the .loading class, hide the text */
+.btn.loading .btn-text {
+    display: none;
 }
