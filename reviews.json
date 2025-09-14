@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "restaurant": "BangBang",
+    "foodItem": "Bau Bun",
+    "price": "13.00",
+    "taste": "4",
+    "texture": "4",
+    "size": "3",
+    "value": "5",
+    "EL": "No",
+    "AG": "No",
+    "imageUpload": {},
+    "timestamp": "2025-09-14T14:57:48.502Z",
+    "image": ""
+  }
+]
