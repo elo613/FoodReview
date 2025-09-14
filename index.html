@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // NOTE: This XOR cipher is for obfuscation only and provides no real security.
         // It should not be used in a production application with multiple users.
         _xorCipher: (str, key) => str.split('').map((char, i) => String.fromCharCode(char.charCodeAt(0) ^ key.charCodeAt(i % key.length))).join(''),
-        _decryptPat: (encryptedData, key) => atob(ApiService._xorCipher(atob(encryptedData), key)),
+        _decryptPat: (encryptedData, key) => ApiService._xorCipher(atob(encryptedData), key),
 
         async getPat(password) {
             const res = await fetch(`${this._getRawUrl(PAT_FILE)}?t=${Date.now()}`);
