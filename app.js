@@ -61,7 +61,10 @@ document.addEventListener("DOMContentLoaded", () => {
             return await res.json();
         },
 
+// ... inside ApiService ...
+
         _compressImage(file) {
+            console.log(`Starting compression for: ${file.name}, size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
             return new Promise((resolve, reject) => {
                 const options = {
                     maxWidth: 800,
@@ -69,12 +72,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     quality: 0.7,
                     maxFileSize: 2 * 1024 * 1024 // 2MB target
                 };
-                if (file.size <= options.maxFileSize) {
-                    return resolve(file); // No need to compress if already small
+        
+                // No need to compress if it's already small enough
+                if (file.size <= options.maxFileSize && file.type === 'image/jpeg') {
+                    console.log("Image is small enough, skipping compression.");
+                    return resolve(file);
                 }
+        
                 const image = new Image();
                 image.src = URL.createObjectURL(file);
+        
                 image.onload = () => {
+                    console.log("Image loaded into memory. Starting canvas operations.");
                     try {
                         let { width, height } = image;
                         const ratio = Math.min(options.maxWidth / width, options.maxHeight / height, 1);
@@ -85,38 +94,38 @@ document.addEventListener("DOMContentLoaded", () => {
                         canvas.width = width;
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
+                        if (!ctx) {
+                            return reject(new Error("Could not get canvas context."));
+                        }
                         ctx.imageSmoothingQuality = 'high';
                         ctx.drawImage(image, 0, 0, width, height);
-
+        
+                        console.log(`Drawn to canvas at ${width}x${height}. Converting to Blob.`);
                         canvas.toBlob(blob => {
                           if (!blob) {
-                            console.warn("toBlob failed, using toDataURL fallback");
-                            const dataUrl = canvas.toDataURL('image/jpeg', options.quality);
-                            const byteString = atob(dataUrl.split(',')[1]);
-                            const buffer = new ArrayBuffer(byteString.length);
-                            const intArray = new Uint8Array(buffer);
-                            for (let i = 0; i < byteString.length; i++) {
-                              intArray[i] = byteString.charCodeAt(i);
-                            }
-                            const fallbackFile = new File([intArray], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' });
-                            resolve(fallbackFile);
-                            return;
+                            // Fallback for browsers where toBlob might fail
+                            console.warn("canvas.toBlob() returned null. Attempting fallback.");
+                            return reject(new Error("Canvas to Blob conversion failed."));
                           }
+                          console.log(`Compression successful. New size: ${(blob.size / 1024).toFixed(2)} KB`);
                           const compressedFile = new File([blob], file.name.replace(/\.\w+$/, '.jpg'), {
                             type: 'image/jpeg',
                             lastModified: Date.now(),
                           });
                           resolve(compressedFile);
                         }, 'image/jpeg', options.quality);
-
+        
                     } catch(error) {
+                        console.error("Error during canvas processing:", error);
                         reject(error);
                     } finally {
                         URL.revokeObjectURL(image.src);
                     }
                 };
+        
                 image.onerror = () => {
                     URL.revokeObjectURL(image.src);
+                    console.error("Failed to load image for compression. It might be corrupt or an unsupported format.");
                     reject(new Error('Failed to load image for compression.'));
                 };
             });
@@ -359,6 +368,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 this.setState({ token: null, reviews: [] });
             });
 
+// ... inside bindEvents() ...
+
             UIManager.reviewForm.addEventListener("submit", e => {
                 e.preventDefault();
                 this.withLoading(async () => {
@@ -366,11 +377,24 @@ document.addEventListener("DOMContentLoaded", () => {
                     const newReview = Object.fromEntries(new FormData(form));
                     newReview.timestamp = new Date().toISOString();
                     const file = this.state.imageFile;
-
+            
+                    // ✅ ADDED A DEDICATED TRY/CATCH FOR IMAGE HANDLING
                     if (file) {
-                        UIManager.showToast("Compressing & uploading image...");
-                        const compressedFile = await ApiService._compressImage(file);
-                        newReview.image = await ApiService.uploadImage(compressedFile, this.state.token);
+                        try {
+                            UIManager.showToast("Compressing & uploading image...");
+                            const compressedFile = await ApiService._compressImage(file);
+                            if (!compressedFile) {
+                                // This will stop execution if compression returns nothing
+                                throw new Error("Image compression failed silently.");
+                            }
+                            newReview.image = await ApiService.uploadImage(compressedFile, this.state.token);
+                        } catch (imageError) {
+                            // This will now catch the specific error and show it to you
+                            console.error("Image processing failed:", imageError);
+                            UIManager.showToast(`Image Error: ${imageError.message}`, true);
+                            // Return here to stop the review from being saved without the image
+                            return; 
+                        }
                     }
                     
                     const updated = [...this.state.reviews, newReview];
@@ -380,6 +404,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     UIManager.showToast("Review added successfully!");
                 });
             });
+
+
 
             UIManager.reviewsList.addEventListener('click', e => {
                 if (e.target.dataset.action !== 'delete' || !confirm("Delete this review?")) return;
