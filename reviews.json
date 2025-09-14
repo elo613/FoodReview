@@ -14,20 +14,6 @@
     "image": "https://raw.githubusercontent.com/elo613/FoodReview/main/images/1757865031139_test.png"
   },
   {
-    "restaurant": "Service test",
-    "foodItem": "Guess",
-    "price": "255.00",
-    "taste": "7",
-    "texture": "9",
-    "size": "5",
-    "value": "10",
-    "EL": "Yes",
-    "AG": "Yes",
-    "imageUpload": {},
-    "timestamp": "2025-09-14T15:52:53.311Z",
-    "image": "https://raw.githubusercontent.com/elo613/FoodReview/main/images/1757865173311_1000125103.jpg"
-  },
-  {
     "restaurant": "Hhb",
     "foodItem": "Ggv",
     "price": "999.00",
