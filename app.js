@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return await res.json();
     },
 
-    async uploadImage(file,token){
+async uploadImage(file,token){
       const sanitized = file.name.replace(/[^a-zA-Z0-9.-]/g,'_');
       const timestamp = Date.now();
       const fileName = `images/${timestamp}_${sanitized}`;
