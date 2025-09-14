@@ -98,11 +98,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     _decryptPat: (encryptedData, key) => ApiService._xorCipher(atob(encryptedData), key).trim(),
 
-    _isValidGitHubToken: (token) => {
+  _isValidGitHubToken: (token) => {
       if (!token || typeof token !== 'string') return false;
       const validPrefixes = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_', 'github_pat_'];
-      return validPrefixes.some(p => token.startsWith(p)) && token.length >= 20;
-    },
+      // Modern PATs can be 50–100+ characters
+      return validPrefixes.some(p => token.startsWith(p)) && token.length >= 40 && token.length <= 200;
+  },
 
     async getPat(password) {
       try {
