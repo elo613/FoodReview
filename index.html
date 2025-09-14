@@ -159,8 +159,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     const { data } = await res.json();
                     const token = this._decryptPat(data, password);
         
-                    // Add this line for testing
+                    // Enhanced debugging logs
                     console.log('Decrypted GitHub PAT for testing:', token);
+                    console.log('Token length:', token.length);
+                    console.log('Is the token valid?', this._isValidGitHubToken(token));
         
                     if (!this._isValidGitHubToken(token)) {
                         throw new Error('Token decryption failed or token is invalid. Check password.');
