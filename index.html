@@ -1,4 +1,52 @@
-<!DOCTYPE html>
+_isValidGitHubToken(token) {
+            // Check if token is a string and has reasonable length
+            if (!token || typeof token !== 'string') {
+                return false;
+            }
+            
+            // Trim whitespace
+            token = token.trim();
+            
+            // Check minimum length (GitHub tokens are typically 40+ characters)
+            if (token.length < 20) {
+                return false;
+            }
+            
+            // Check for valid GitHub token prefixes
+            const validPrefixes = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_', 'github_pat_'];
+            const hasValidPrefix = validPrefixes.some(prefix => token.startsWith(prefix));
+            
+            // If it doesn't have a valid prefix, check if it looks like a valid token
+            // (alphanumeric characters, underscores, no obvious garbage characters)
+            if (!hasValidPrefix) {
+                // Check for obvious decryption failure indicators
+                const hasGarbageChars = /[^\w\-_]/.test(token);
+                if (hasGarbageChars) {
+                    return false;
+                }
+                
+                // For older token formats, be more lenient but still validate
+                if (token.length < 30) {
+                    return false;
+                }
+            }
+            
+            // Check for common decryption failure patterns
+            const failurePatterns = [
+                'undefined',
+                'null',
+                'NaN',
+                '\x00', // null bytes
+                '���',   // replacement characters
+            ];
+            
+            const hasFailurePattern = failurePatterns.some(pattern => token.includes(pattern));
+            if (hasFailurePattern) {
+                return false;
+            }
+            
+            return true;
+        }<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
