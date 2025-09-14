@@ -31,14 +31,51 @@
         .modal-overlay {
             animation: fadeIn 0.3s ease-in-out;
         }
+        .login-form {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="fixed inset-0 login-form flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full mx-4">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Food Review Manager</h1>
+                <p class="text-gray-600">Enter your password to access your reviews</p>
+            </div>
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label for="loginPassword" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" id="loginPassword" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-lg">
+                </div>
+                <button type="submit" 
+                        class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200">
+                    Access Reviews
+                </button>
+            </form>
+            <div id="loginError" class="mt-4 text-red-600 text-sm text-center hidden"></div>
+            <div id="loginLoading" class="mt-4 text-blue-600 text-sm text-center hidden">
+                <div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                Loading...
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 hidden">
         <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-900">Food Review Manager</h1>
-            <p class="text-gray-600 mt-2">Your personal journal for every meal.</p>
+            <div class="flex justify-between items-center">
+                <div class="flex-1">
+                    <h1 class="text-4xl font-bold text-gray-900">Food Review Manager</h1>
+                    <p class="text-gray-600 mt-2">Your personal journal for every meal.</p>
+                </div>
+                <button id="logoutBtn" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50">
+                    Logout
+                </button>
+            </div>
         </header>
 
         <div class="mb-6 border-b border-gray-200">
@@ -73,7 +110,7 @@
                         <label class="block text-sm font-medium text-gray-700">Photo</label>
                         <div class="mt-1 flex items-center gap-4">
                             <label for="imageUpload" class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Choose Image</label>
-                            <input type="file" id="imageUpload" accept="image/*">
+                            <input type="file" id="imageUpload" accept="image/*" capture="environment">
                             <p id="fileName" class="text-sm text-gray-500">No file chosen</p>
                         </div>
                         <div class="mt-4">
@@ -144,22 +181,6 @@
             <p id="toastMessage"></p>
         </div>
 
-        <div id="passwordModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden modal-overlay">
-            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white modal">
-                <div class="mt-3 text-center">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900">Enter Password</h3>
-                    <div class="mt-2 px-7 py-3">
-                        <p class="text-sm text-gray-500 mb-4">Enter the password to decrypt your token and save reviews to GitHub.</p>
-                        <input type="password" id="modalPasswordInput" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                    </div>
-                    <div class="items-center px-4 py-3 gap-2 flex">
-                        <button id="cancelModalBtn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md w-full hover:bg-gray-300">Cancel</button>
-                        <button id="confirmModalBtn" class="px-4 py-2 bg-green-600 text-white rounded-md w-full hover:bg-green-700">Confirm</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
     </div>
 
     <script>
@@ -169,11 +190,20 @@
             const GITHUB_REPO = 'FoodReviews';
             const REVIEWS_FILE_PATH = 'reviews.json';
             const ENCRYPTED_PAT_PATH = 'pat.enc.json';
+            const IMAGES_FOLDER = 'images';
             
             const getApiUrl = (path) => `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`;
             const getRawUrl = (path) => `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${path}`;
 
             // --- DOM Elements ---
+            const loginScreen = document.getElementById('loginScreen');
+            const loginForm = document.getElementById('loginForm');
+            const loginPassword = document.getElementById('loginPassword');
+            const loginError = document.getElementById('loginError');
+            const loginLoading = document.getElementById('loginLoading');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const app = document.getElementById('app');
+            
             const tabs = { add: addTab, read: readTab };
             const contents = { add: addReviewContent, read: readReviewsContent };
             const reviewForm = document.getElementById('reviewForm');
@@ -184,15 +214,11 @@
             const imageUpload = document.getElementById('imageUpload');
             const imagePreview = document.getElementById('imagePreview');
             const fileName = document.getElementById('fileName');
-            // Modal
-            const passwordModal = document.getElementById('passwordModal');
-            const modalPasswordInput = document.getElementById('modalPasswordInput');
-            const cancelModalBtn = document.getElementById('cancelModalBtn');
-            const confirmModalBtn = document.getElementById('confirmModalBtn');
 
             // --- App State ---
             let reviews = [];
             let currentImageDataUrl = null;
+            let decryptedPat = null;
 
             // --- Crypto Functions ---
             const cryptoUtils = {
@@ -226,6 +252,69 @@
                     return dec.decode(decryptedContent);
                 }
             };
+
+            // --- Login Handling ---
+            const showError = (message) => {
+                loginError.textContent = message;
+                loginError.classList.remove('hidden');
+            };
+
+            const hideError = () => {
+                loginError.classList.add('hidden');
+            };
+
+            const showLoading = (show) => {
+                loginLoading.classList.toggle('hidden', !show);
+            };
+
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                const password = loginPassword.value;
+                if (!password) return;
+
+                hideError();
+                showLoading(true);
+
+                try {
+                    // Fetch and decrypt the PAT
+                    const response = await fetch(getRawUrl(ENCRYPTED_PAT_PATH) + `?t=${new Date().getTime()}`);
+                    if (response.status === 404) {
+                        throw new Error('Setup not complete: pat.enc.json not found in the repo.');
+                    }
+                    if (!response.ok) throw new Error('Could not fetch the encrypted PAT file.');
+                    
+                    const encryptedJson = await response.json();
+                    decryptedPat = await cryptoUtils.decrypt(encryptedJson.data, password);
+
+                    // Load reviews
+                    await loadReviewsFromGitHub();
+                    
+                    // Show main app
+                    loginScreen.classList.add('hidden');
+                    app.classList.remove('hidden');
+                    
+                    showToast('Successfully logged in!');
+
+                } catch (error) {
+                    console.error('Login error:', error);
+                    if (error.message.includes('decrypt') || error.message.includes('operation failed')) {
+                        showError('Invalid password. Please try again.');
+                    } else {
+                        showError(error.message);
+                    }
+                } finally {
+                    showLoading(false);
+                }
+            };
+
+            const handleLogout = () => {
+                decryptedPat = null;
+                reviews = [];
+                loginPassword.value = '';
+                hideError();
+                app.classList.add('hidden');
+                loginScreen.classList.remove('hidden');
+            };
             
             // --- Initialization ---
             const init = async () => {
@@ -238,7 +327,6 @@
                         select.appendChild(option);
                     }
                 });
-                await loadReviewsFromUrl();
                 renderReviews();
             };
 
@@ -291,6 +379,37 @@
                 reader.readAsDataURL(file);
             };
 
+            // --- Image Upload to GitHub ---
+            const uploadImageToGitHub = async (imageDataUrl, fileName) => {
+                try {
+                    // Remove data:image/jpeg;base64, prefix
+                    const base64Data = imageDataUrl.split(',')[1];
+                    const imagePath = `${IMAGES_FOLDER}/${fileName}`;
+
+                    const response = await fetch(getApiUrl(imagePath), {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${decryptedPat}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: `Add image ${fileName}`,
+                            content: base64Data
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`GitHub API error: ${errorData.message}`);
+                    }
+
+                    return getRawUrl(imagePath);
+                } catch (error) {
+                    console.error('Failed to upload image:', error);
+                    throw error;
+                }
+            };
+
             // --- Review Management ---
             const renderReviews = () => {
                 reviewsList.innerHTML = '';
@@ -302,7 +421,11 @@
                     const actualIndex = reviews.length - 1 - index;
                     const reviewElement = document.createElement('div');
                     reviewElement.className = 'p-4 border rounded-lg bg-gray-50 shadow-sm';
-                    const imageHTML = review.imageDataUrl ? `<img src="${review.imageDataUrl}" alt="${review.foodItem}" class="mt-4 w-full h-auto max-h-80 object-cover rounded-md">` : '';
+                    
+                    // Use imageUrl if available, otherwise fall back to imageDataUrl for backwards compatibility
+                    const imageUrl = review.imageUrl || review.imageDataUrl;
+                    const imageHTML = imageUrl ? `<img src="${imageUrl}" alt="${review.foodItem}" class="mt-4 w-full h-auto max-h-80 object-cover rounded-md">` : '';
+                    
                     reviewElement.innerHTML = `
                         <div class="flex justify-between items-start">
                             <div>
@@ -326,35 +449,71 @@
                     reviewsList.appendChild(reviewElement);
                 });
             };
-            const addReview = (e) => {
+
+            const addReview = async (e) => {
                 e.preventDefault();
-                const newReview = { restaurant: restaurant.value, foodItem: foodItem.value, price: parseFloat(price.value).toFixed(2), taste: taste.value, texture: texture.value, size: size.value, value: value.value, eatAgainEL: document.querySelector('input[name="eatAgainEL"]:checked').value, eatAgainAG: document.querySelector('input[name="eatAgainAG"]:checked').value, imageDataUrl: currentImageDataUrl };
+                
+                const newReview = { 
+                    restaurant: restaurant.value, 
+                    foodItem: foodItem.value, 
+                    price: parseFloat(price.value).toFixed(2), 
+                    taste: taste.value, 
+                    texture: texture.value, 
+                    size: size.value, 
+                    value: value.value, 
+                    eatAgainEL: document.querySelector('input[name="eatAgainEL"]:checked').value, 
+                    eatAgainAG: document.querySelector('input[name="eatAgainAG"]:checked').value,
+                    timestamp: new Date().toISOString()
+                };
+
+                // Handle image upload if there's an image
+                if (currentImageDataUrl) {
+                    try {
+                        showToast('Uploading image...');
+                        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                        const imageName = `${newReview.restaurant.replace(/\s+/g, '_')}_${newReview.foodItem.replace(/\s+/g, '_')}_${timestamp}.jpg`;
+                        const imageUrl = await uploadImageToGitHub(currentImageDataUrl, imageName);
+                        newReview.imageUrl = imageUrl;
+                    } catch (error) {
+                        showToast('Failed to upload image, but review will be saved without it', 'error');
+                        console.error('Image upload failed:', error);
+                    }
+                }
+
                 reviews.push(newReview);
-                saveToLocalStorage(); // Save locally as a backup
+                
+                // Auto-save to GitHub
+                try {
+                    await saveReviewsToGithub();
+                } catch (error) {
+                    showToast('Review added locally but failed to save to GitHub', 'error');
+                }
+                
                 reviewForm.reset();
                 currentImageDataUrl = null;
                 imagePreview.src = '';
                 imagePreview.classList.add('hidden');
                 fileName.textContent = 'No file chosen';
-                showToast('Review added. Save to GitHub to persist.');
                 switchTab('read');
             };
-            const deleteReview = (index) => {
+
+            const deleteReview = async (index) => {
                 reviews.splice(index, 1);
-                saveToLocalStorage();
                 renderReviews();
-                showToast('Review deleted. Save to GitHub to persist.');
+                
+                try {
+                    await saveReviewsToGithub();
+                } catch (error) {
+                    showToast('Review deleted locally but failed to save to GitHub', 'error');
+                }
             };
 
-            // --- GitHub & Data Persistence ---
-            const saveToLocalStorage = () => localStorage.setItem('foodReviews', JSON.stringify(reviews));
-
-            const loadReviewsFromUrl = async () => {
+            // --- GitHub Data Management ---
+            const loadReviewsFromGitHub = async () => {
                 try {
-                    const response = await fetch(getRawUrl(REVIEWS_FILE_PATH) + `?t=${new Date().getTime()}`); // Cache-bust
-                    if (!response.ok) { // File might not exist yet
+                    const response = await fetch(getRawUrl(REVIEWS_FILE_PATH) + `?t=${new Date().getTime()}`);
+                    if (!response.ok) {
                         if (response.status === 404) {
-                            showToast('reviews.json not found on GitHub. Add a review and save it to create the file.', 'error');
                             reviews = [];
                             return;
                         }
@@ -363,21 +522,18 @@
                     const data = await response.json();
                     if (Array.isArray(data)) {
                         reviews = data;
-                        saveToLocalStorage();
-                        showToast('Reviews loaded from GitHub!');
                     }
                 } catch (error) {
                     console.error("Could not load reviews from GitHub:", error);
-                    showToast('Could not load from GitHub. Using local backup.', 'error');
-                    const storedReviews = localStorage.getItem('foodReviews');
-                    if (storedReviews) reviews = JSON.parse(storedReviews);
+                    reviews = [];
                 }
             };
             
-            const saveReviewsToGithub = async (decryptedPat) => {
+            const saveReviewsToGithub = async () => {
                 try {
                     showToast('Saving to GitHub...');
-                    // 1. Get the current file SHA
+                    
+                    // Get current file SHA
                     let currentSha;
                     const getFileResponse = await fetch(getApiUrl(REVIEWS_FILE_PATH), {
                         headers: { 'Authorization': `token ${decryptedPat}` }
@@ -389,11 +545,10 @@
                         throw new Error('Could not fetch current file SHA.');
                     }
 
-                    // 2. Prepare the new content
+                    // Prepare and send update
                     const contentToSave = JSON.stringify(reviews, null, 2);
-                    const encodedContent = btoa(unescape(encodeURIComponent(contentToSave))); // Handles UTF-8 chars
+                    const encodedContent = btoa(unescape(encodeURIComponent(contentToSave)));
 
-                    // 3. Send the update request
                     const response = await fetch(getApiUrl(REVIEWS_FILE_PATH), {
                         method: 'PUT',
                         headers: {
@@ -403,7 +558,7 @@
                         body: JSON.stringify({
                             message: `Update reviews ${new Date().toISOString()}`,
                             content: encodedContent,
-                            sha: currentSha // Include sha if updating an existing file
+                            sha: currentSha
                         })
                     });
 
@@ -413,15 +568,14 @@
                     }
 
                     showToast('Successfully saved to GitHub!', 'success');
-                    saveToLocalStorage(); // Also update local backup
 
                 } catch (error) {
                     console.error('Failed to save to GitHub:', error);
-                    showToast(`Error: ${error.message}`, 'error');
+                    throw error;
                 }
             };
 
-            // --- UI Helpers & Event Listeners ---
+            // --- UI Helpers ---
             let toastTimer;
             const showToast = (message, type = 'success') => {
                 clearTimeout(toastTimer);
@@ -431,50 +585,20 @@
                     toast.className = toast.className.replace('translate-y-0 opacity-100', 'translate-y-20 opacity-0');
                 }, 4000);
             };
-            
-            // Modal Listeners
-            saveToGithubBtn.addEventListener('click', () => {
-                passwordModal.classList.remove('hidden');
-                modalPasswordInput.focus();
-            });
-            cancelModalBtn.addEventListener('click', () => passwordModal.classList.add('hidden'));
-            confirmModalBtn.addEventListener('click', async () => {
-                const password = modalPasswordInput.value;
-                if (!password) {
-                    showToast('Password is required.', 'error');
-                    return;
-                }
-                passwordModal.classList.add('hidden');
-                modalPasswordInput.value = '';
 
-                try {
-                    showToast('Decrypting token...');
-                    // 1. Fetch the encrypted PAT file from GitHub
-                    const response = await fetch(getRawUrl(ENCRYPTED_PAT_PATH) + `?t=${new Date().getTime()}`);
-                    if (response.status === 404) {
-                        throw new Error('Setup not complete: pat.enc.json not found in the repo.');
-                    }
-                    if (!response.ok) throw new Error('Could not fetch the encrypted PAT file.');
-                    
-                    const encryptedJson = await response.json();
-                    
-                    // 2. Decrypt it
-                    const decryptedPat = await cryptoUtils.decrypt(encryptedJson.data, password);
-                    showToast('Decryption successful. Saving...', 'success');
-
-                    // 3. Save the reviews
-                    await saveReviewsToGithub(decryptedPat);
-
-                } catch (error) {
-                    showToast(`Error: ${error.message}`, 'error');
-                    console.error(error);
-                }
-            });
-
-            // Core Listeners
+            // --- Event Listeners ---
+            loginForm.addEventListener('submit', handleLogin);
+            logoutBtn.addEventListener('click', handleLogout);
             Object.keys(tabs).forEach(id => tabs[id].addEventListener('click', () => switchTab(id)));
             reviewForm.addEventListener('submit', addReview);
             imageUpload.addEventListener('change', handleImageUpload);
+            saveToGithubBtn.addEventListener('click', async () => {
+                try {
+                    await saveReviewsToGithub();
+                } catch (error) {
+                    showToast(`Error: ${error.message}`, 'error');
+                }
+            });
             reviewsList.addEventListener('click', (e) => {
                 if (e.target.classList.contains('delete-btn')) {
                     const index = e.target.dataset.index;
