@@ -200,6 +200,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         async saveReviews(reviews, token) {
             try {
+                // Validate inputs
+                if (!token || typeof token !== 'string' || token.trim() === '') {
+                    throw new Error('Invalid or missing authentication token');
+                }
+                
+                if (!Array.isArray(reviews)) {
+                    throw new Error('Reviews must be an array');
+                }
+
                 const url = this._getApiUrl(REVIEWS_FILE_PATH);
                 let sha = null;
                 
@@ -207,8 +216,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 try {
                     const existingRes = await fetch(url, {
                         headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/vnd.github.v3+json'
+                            'Authorization': `Bearer ${token.trim()}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'User-Agent': 'Food-Review-App'
                         }
                     });
                     if (existingRes.ok) {
@@ -219,9 +229,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.warn("Could not retrieve file SHA. Creating new file.");
                 }
                 
-                // Prepare the content
+                // Prepare the content - ensure proper JSON formatting
                 const jsonContent = JSON.stringify(reviews, null, 2);
-                const base64Content = btoa(unescape(encodeURIComponent(jsonContent)));
+                console.log('JSON content to save:', jsonContent);
+                
+                // Use proper UTF-8 encoding for base64
+                const base64Content = btoa(jsonContent);
+                console.log('Base64 content length:', base64Content.length);
                 
                 const requestBody = { 
                     message: `Update reviews ${new Date().toISOString()}`, 
@@ -233,13 +247,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 
                 console.log('Saving to URL:', url);
+                console.log('Token length:', token.length);
+                console.log('Request body keys:', Object.keys(requestBody));
                 
                 const res = await fetch(url, {
                     method: "PUT",
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'Authorization': `Bearer ${token.trim()}`,
                         'Accept': 'application/vnd.github.v3+json',
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'User-Agent': 'Food-Review-App'
                     },
                     body: JSON.stringify(requestBody),
                 });
