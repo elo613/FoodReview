@@ -46,10 +46,10 @@ document.addEventListener("DOMContentLoaded", () => {
             if (sha) body.sha = sha;
             const res = await fetch(url, {
                 method: 'PUT',
-                headers: { 
-                    'Authorization': `Bearer ${token}`, 
-                    'Accept': 'application/vnd.github.v3+json', 
-                    'Content-Type': 'application/json' 
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(body)
             });
@@ -71,9 +71,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const body = { message: `Upload image ${file.name}`, content: base64Content };
             const res = await fetch(url, {
                 method: 'PUT',
-                headers: { 
-                    'Authorization': `Bearer ${token}`, 
-                    'Accept': 'application/vnd.github.v3+json' 
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
                 },
                 body: JSON.stringify(body)
             });
@@ -81,15 +81,28 @@ document.addEventListener("DOMContentLoaded", () => {
             return fileName;
         },
 
-        async fetchImageAsBlobUrl(path, token) {
-            const url = this._getRawUrl(path);
-            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+        async fetchPrivateImageAsDataUrl(path, token) {
+            const url = this._getApiUrl(path);
+            const res = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
             if (!res.ok) {
-                console.error("Failed to fetch image:", path);
+                console.error("Failed to fetch image from API:", path);
                 return null;
             }
-            const imageBlob = await res.blob();
-            return URL.createObjectURL(imageBlob);
+            const data = await res.json();
+            const extension = path.split('.').pop().toLowerCase();
+            const mimeType = {
+                'png': 'image/png',
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'gif': 'image/gif'
+            }[extension] || 'application/octet-stream';
+
+            return `data:${mimeType};base64,${data.content}`;
         }
     };
 
@@ -170,9 +183,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (token) {
                 imagesToLoad.forEach(img => {
                     const path = img.dataset.imagePath;
-                    ApiService.fetchImageAsBlobUrl(path, token).then(blobUrl => {
-                        if (blobUrl) {
-                            img.src = blobUrl;
+                    ApiService.fetchPrivateImageAsDataUrl(path, token).then(dataUrl => {
+                        if (dataUrl) {
+                            img.src = dataUrl;
                             img.onload = () => img.classList.remove('bg-gray-200');
                         }
                     });
