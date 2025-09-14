@@ -1,17 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // --- ADDED FOR DEBUGGING: Global Error Catcher ---
-    // This will alert you to any silent JavaScript errors that only happen on mobile.
-    window.onerror = function(message, source, lineno, colno, error) {
-        alert(`An error occurred: \nMessage: ${message}\nSource: ${source.split('/').pop()}\nLine: ${lineno}`);
-        return true; // Prevents the default browser error handling
-    };
-
     const GITHUB_OWNER = "elo613";
     const GITHUB_REPO = "PrivateFoodData";
     const REVIEWS_FILE_PATH = "reviews.json";
     const PAT_FILE = "pat.enc.json";
 
-    // --- ApiService (No changes needed here) ---
+    // --- ApiService ---
     const ApiService = {
         _getApiUrl: path => `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(path)}`,
         _getRawUrl: path => `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${encodeURIComponent(path)}`,
@@ -44,15 +37,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 const metaRes = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
                 });
-                if (metaRes.ok) sha = (await metaRes.json()).sha;
-            } catch (e) { /* Ignore if file doesn't exist */ }
+                if (metaRes.ok) {
+                    const meta = await metaRes.json();
+                    sha = meta.sha;
+                }
+            } catch (e) {
+                // If the file doesn't exist, we can ignore the error and proceed without a sha.
+            }
             const jsonContent = JSON.stringify(reviews, null, 2);
             const base64Content = btoa(new TextEncoder().encode(jsonContent).reduce((d, b) => d + String.fromCharCode(b), ''));
             const body = { message: `Update reviews ${new Date().toISOString()}`, content: base64Content };
             if (sha) body.sha = sha;
             const res = await fetch(url, {
                 method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(body)
             });
             if (!res.ok) throw new Error(`Failed to save reviews: ${res.statusText}`);
@@ -61,27 +63,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
         _compressImage(file) {
             return new Promise((resolve, reject) => {
-                const options = { maxWidth: 800, maxHeight: 800, quality: 0.7, maxFileSize: 2 * 1024 * 1024 };
-                if (file.size <= options.maxFileSize) return resolve(file);
+                const options = {
+                    maxWidth: 800,
+                    maxHeight: 800,
+                    quality: 0.7,
+                    maxFileSize: 2 * 1024 * 1024 // 2MB target
+                };
+                if (file.size <= options.maxFileSize) {
+                    return resolve(file); // No need to compress if already small
+                }
                 const image = new Image();
                 image.src = URL.createObjectURL(file);
                 image.onload = () => {
                     try {
                         let { width, height } = image;
                         const ratio = Math.min(options.maxWidth / width, options.maxHeight / height, 1);
+                        width = Math.floor(width * ratio);
+                        height = Math.floor(height * ratio);
+                        
                         const canvas = document.createElement('canvas');
-                        canvas.width = Math.floor(width * ratio);
-                        canvas.height = Math.floor(height * ratio);
+                        canvas.width = width;
+                        canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.imageSmoothingQuality = 'high';
-                        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(image, 0, 0, width, height);
+
                         canvas.toBlob(blob => {
                             if (!blob) return reject(new Error('Canvas to Blob conversion failed.'));
-                            resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
+                            const compressedFile = new File([blob], file.name, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now(),
+                            });
+                            resolve(compressedFile);
                         }, 'image/jpeg', options.quality);
-                    } catch (error) { reject(error); } finally { URL.revokeObjectURL(image.src); }
+                    } catch(error) {
+                        reject(error);
+                    } finally {
+                        URL.revokeObjectURL(image.src);
+                    }
                 };
-                image.onerror = () => { URL.revokeObjectURL(image.src); reject(new Error('Failed to load image for compression.')); };
+                image.onerror = () => {
+                    URL.revokeObjectURL(image.src);
+                    reject(new Error('Failed to load image for compression.'));
+                };
             });
         },
 
@@ -98,28 +122,41 @@ document.addEventListener("DOMContentLoaded", () => {
             const body = { message: `Upload image ${file.name}`, content: base64Content };
             const res = await fetch(url, {
                 method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(body)
             });
             if (!res.ok) throw new Error(`Image upload failed: ${res.statusText}`);
-            return (await res.json()).content.path;
+            const data = await res.json();
+            return data.content.path;
         },
-
+        
         async fetchPrivateImageAsDataUrl(path, token) {
-            const url = this._getApiUrl(path);
-            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3.raw' } });
-            if (!res.ok) { console.error("Failed to fetch image:", path); return null; }
-            const blob = await res.blob();
-            return new Promise((resolve, reject) => {
+             const url = this._getApiUrl(path);
+             const res = await fetch(url, {
+                 headers: {
+                     'Authorization': `Bearer ${token}`,
+                     'Accept': 'application/vnd.github.v3.raw'
+                 }
+             });
+             if (!res.ok) {
+                 console.error("Failed to fetch image from API:", path);
+                 return null;
+             }
+             const blob = await res.blob();
+             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result);
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);
-            });
-        }
+             });
+         }
     };
 
-    // --- UIManager (No changes needed here) ---
+    // --- UIManager ---
     const UIManager = {
         loginScreen: document.getElementById("loginScreen"),
         loginForm: document.getElementById("loginForm"),
@@ -136,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
         reviewsList: document.getElementById("reviewsList"),
         imageUpload: document.getElementById("imageUpload"),
         imagePreview: document.getElementById("imagePreview"),
-        imageProgress: document.getElementById("imageProgress"),
+        imageProgress: document.getElementById("imageProgress"), // <-- ADDED
         toast: document.getElementById("toast"),
 
         showToast(msg, error = false) {
@@ -203,7 +240,8 @@ document.addEventListener("DOMContentLoaded", () => {
             this.reviewsList.innerHTML = reviews.length ? reviews.slice().reverse().map((r, i) => this._createReviewHTML(r, reviews.length - 1 - i)).join('') : `<p class="text-gray-500 text-center py-8">No reviews yet.</p>`;
             if (token) {
                 this.reviewsList.querySelectorAll('img[data-image-path]').forEach(img => {
-                    ApiService.fetchPrivateImageAsDataUrl(img.dataset.imagePath, token).then(dataUrl => {
+                    const path = img.dataset.imagePath;
+                    ApiService.fetchPrivateImageAsDataUrl(path, token).then(dataUrl => {
                         if (dataUrl) {
                             img.src = dataUrl;
                             img.onload = () => img.classList.remove('bg-gray-200');
@@ -215,7 +253,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         populateRatingSelectors() {
             ['taste', 'texture', 'size', 'value'].forEach(id => {
-                document.getElementById(id).innerHTML = Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
+                const select = document.getElementById(id);
+                select.innerHTML = Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
             });
             ['EL', 'AG'].forEach(id => {
                 document.getElementById(id).innerHTML = `<option value="Yes">Yes</option><option value="No">No</option>`;
@@ -225,7 +264,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- AppController ---
     const AppController = {
-        state: { token: sessionStorage.getItem('github_pat') || null, reviews: [], activeTab: 'read', isBusy: false, imageFile: null },
+        state: {
+            token: sessionStorage.getItem('github_pat') || null,
+            reviews: [],
+            activeTab: 'read',
+            isBusy: false,
+            imageFile: null
+        },
 
         setState(s) {
             Object.assign(this.state, s);
@@ -233,10 +278,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (s.reviews !== undefined) UIManager.renderReviews(this.state.reviews, this.state.token);
         },
 
-        // --- MODIFIED FOR DEBUGGING: Added toasts to trace the busy state ---
         async withLoading(fn) {
             if (this.state.isBusy) return;
-            UIManager.showToast("DEBUG: State is now BUSY"); // DEBUG
             this.setState({ isBusy: true });
             try {
                 await fn();
@@ -244,18 +287,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.error(err);
                 UIManager.showToast(err.message, true);
             } finally {
-                UIManager.showToast("DEBUG: State is now NOT busy"); // DEBUG
                 this.setState({ isBusy: false });
             }
         },
 
+        // NEW HELPER: Reads a file with progress updates
         _readFileWithProgress(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = (e) => resolve(e.target.result);
                 reader.onerror = () => reject(new Error("Failed to read file."));
                 reader.onprogress = (event) => {
-                    if (event.lengthComputable) UIManager.imageProgress.value = Math.round((event.loaded / event.total) * 100);
+                    if (event.lengthComputable) {
+                        UIManager.imageProgress.value = Math.round((event.loaded / event.total) * 100);
+                    }
                 };
                 reader.readAsDataURL(file);
             });
@@ -265,7 +310,8 @@ document.addEventListener("DOMContentLoaded", () => {
             UIManager.populateRatingSelectors();
             if (this.state.token) {
                 await this.withLoading(async () => {
-                    this.setState({ reviews: await ApiService.fetchReviews(this.state.token) });
+                    const reviews = await ApiService.fetchReviews(this.state.token);
+                    this.setState({ reviews });
                 }).catch(() => this.setState({ token: null }));
             } else {
                  this.setState({ token: null });
@@ -281,11 +327,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 this.withLoading(async () => {
                     const token = await ApiService.getPat(UIManager.loginPassword.value);
                     sessionStorage.setItem('github_pat', token);
-                    this.setState({ token, reviews: await ApiService.fetchReviews(token), activeTab: 'read' });
+                    const reviews = await ApiService.fetchReviews(token);
+                    this.setState({ token, reviews, activeTab: 'read' });
                 }).catch(err => {
                     UIManager.loginError.textContent = err.message;
                     UIManager.loginError.classList.remove("hidden");
-                }).finally(() => UIManager.loginLoading.classList.add("hidden"));
+                }).finally(() => {
+                    UIManager.loginLoading.classList.add("hidden");
+                });
             });
 
             UIManager.logoutBtn.addEventListener("click", () => {
@@ -293,16 +342,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 this.setState({ token: null, reviews: [] });
             });
 
-            // --- MODIFIED FOR DEBUGGING: Added toasts to trace submit event ---
             UIManager.reviewForm.addEventListener("submit", e => {
                 e.preventDefault();
-                UIManager.showToast("DEBUG: Submit clicked!"); // DEBUG
-
-                if (this.state.isBusy) {
-                    UIManager.showToast("DEBUG: Cannot submit, app is busy!", true); // DEBUG
-                    return;
-                }
-
                 this.withLoading(async () => {
                     const form = e.target;
                     const newReview = Object.fromEntries(new FormData(form));
@@ -334,6 +375,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             });
 
+            // REFACTORED: Event listener for image upload
             UIManager.imageUpload.addEventListener("change", async (e) => {
                 const file = e.target.files[0];
                 const cleanUp = () => {
@@ -341,26 +383,33 @@ document.addEventListener("DOMContentLoaded", () => {
                     UIManager.imagePreview.src = '';
                     UIManager.imagePreview.classList.add('hidden');
                     UIManager.imageProgress.classList.add('hidden');
-                    e.target.value = '';
+                    e.target.value = ''; // Reset input
                 };
 
                 if (!file) return cleanUp();
 
-                if (!file.type.startsWith('image/')) { UIManager.showToast("Please select a valid image file.", true); return cleanUp(); }
-                if (file.size > 15 * 1024 * 1024) { UIManager.showToast("Image file too large (max 15MB).", true); return cleanUp(); }
+                if (!file.type.startsWith('image/')) {
+                    UIManager.showToast("Please select a valid image file.", true);
+                    return cleanUp();
+                }
+                if (file.size > 15 * 1024 * 1024) { // 15MB limit
+                    UIManager.showToast("Image file too large (max 15MB).", true);
+                    return cleanUp();
+                }
                 
                 await this.withLoading(async () => {
                     this.setState({ imageFile: file });
                     UIManager.imageProgress.classList.remove('hidden');
                     UIManager.imageProgress.value = 0;
-                    UIManager.imagePreview.classList.add('loading');
+                    UIManager.imagePreview.classList.add('loading'); // Show loading state on preview
                     UIManager.imagePreview.classList.remove('hidden');
 
                     try {
-                        UIManager.imagePreview.src = await this._readFileWithProgress(file);
+                        const dataUrl = await this._readFileWithProgress(file);
+                        UIManager.imagePreview.src = dataUrl;
                     } catch (error) {
                         UIManager.showToast(error.message, true);
-                        cleanUp();
+                        cleanUp(); // Clear state if reading fails
                     } finally {
                         UIManager.imageProgress.classList.add('hidden');
                         UIManager.imagePreview.classList.remove('loading');
