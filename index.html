@@ -233,13 +233,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 const res = await fetch(url, {
                     method: "PUT",
-                    headers: { 
-                        Authorization: `token ${token}`, 
-                        "Content-Type": "application/json" 
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(requestBody),
                 });
-                
+                                
                 if (!res.ok) {
                     const errorText = await res.text();
                     console.error('Save error response:', errorText);
