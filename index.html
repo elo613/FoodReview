@@ -41,7 +41,6 @@
             <p class="text-gray-600 mt-2">Your personal journal for every meal.</p>
         </header>
 
-        <!-- Tab Navigation -->
         <div class="mb-6 border-b border-gray-200">
             <nav class="flex -mb-px space-x-6" aria-label="Tabs">
                 <button id="addTab" class="tab tab-active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm focus:outline-none">
@@ -50,19 +49,13 @@
                 <button id="readTab" class="tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none">
                     Read Reviews
                 </button>
-                <button id="setupTab" class="tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none">
-                    Setup
-                </button>
             </nav>
         </div>
 
-        <!-- Tab Content -->
         <main>
-            <!-- Add Review Tab Content (same as before) -->
             <div id="addReviewContent" class="tab-content bg-white p-6 rounded-lg shadow-md">
                 <form id="reviewForm" class="space-y-6">
-                     <!-- Restaurant & Food Item -->
-                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label for="restaurant" class="block text-sm font-medium text-gray-700">Restaurant</label>
                             <input type="text" id="restaurant" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
@@ -72,12 +65,10 @@
                             <input type="text" id="foodItem" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                         </div>
                     </div>
-                    <!-- Price -->
                     <div>
                         <label for="price" class="block text-sm font-medium text-gray-700">Price (£)</label>
                         <input type="number" id="price" step="0.01" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                     </div>
-                    <!-- Image Upload -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Photo</label>
                         <div class="mt-1 flex items-center gap-4">
@@ -89,7 +80,6 @@
                             <img id="imagePreview" src="" alt="Image Preview" class="hidden max-h-60 rounded-lg shadow-sm"/>
                         </div>
                     </div>
-                    <!-- Ratings -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                         <div>
                             <label for="taste" class="block text-sm font-medium text-gray-700">Taste (1-10)</label>
@@ -108,7 +98,6 @@
                             <select id="value" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select>
                         </div>
                     </div>
-                    <!-- Would Eat Here Again -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <fieldset>
                             <legend class="text-sm font-medium text-gray-700">Would eat here again? (EL)</legend>
@@ -125,7 +114,6 @@
                             </div>
                         </fieldset>
                     </div>
-                    <!-- Submit Button -->
                     <div class="flex justify-end">
                         <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             Add Review
@@ -134,7 +122,6 @@
                 </form>
             </div>
 
-            <!-- Read Reviews Tab Content -->
             <div id="readReviewsContent" class="tab-content hidden">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -151,50 +138,18 @@
                 </div>
             </div>
 
-            <!-- Setup Tab Content -->
-            <div id="setupContent" class="tab-content hidden">
-                <div class="bg-white p-6 rounded-lg shadow-md space-y-6">
-                    <div>
-                        <h2 class="text-2xl font-semibold text-gray-800">One-Time PAT Setup</h2>
-                        <div class="mt-2 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
-                            <p class="font-bold">Security Warning</p>
-                            <p>This method is highly insecure. Your PAT can be intercepted if someone gains access to this page and your password. Proceed with extreme caution.</p>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="patInput" class="block text-sm font-medium text-gray-700">GitHub Personal Access Token (with `repo` scope)</label>
-                        <input type="password" id="patInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
-                    </div>
-                    <div>
-                        <label for="passwordInput" class="block text-sm font-medium text-gray-700">Enter a Strong Password (to encrypt the token)</label>
-                        <input type="password" id="passwordInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                    </div>
-                    <div class="flex justify-end">
-                        <button id="encryptBtn" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-                            Generate Encrypted Token
-                        </button>
-                    </div>
-                    <div id="encryptedOutputContainer" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700">Save this content to `pat.enc.json` in your repo:</label>
-                        <textarea id="encryptedOutput" readonly class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm font-mono" rows="8"></textarea>
-                    </div>
-                </div>
-            </div>
-
         </main>
         
-        <!-- Toast Notification -->
         <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300">
             <p id="toastMessage"></p>
         </div>
 
-        <!-- Password Modal -->
         <div id="passwordModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden modal-overlay">
             <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white modal">
                 <div class="mt-3 text-center">
                     <h3 class="text-lg leading-6 font-medium text-gray-900">Enter Password</h3>
                     <div class="mt-2 px-7 py-3">
-                        <p class="text-sm text-gray-500 mb-4">Enter the password to decrypt your token and save to GitHub.</p>
+                        <p class="text-sm text-gray-500 mb-4">Enter the password to decrypt your token and save reviews to GitHub.</p>
                         <input type="password" id="modalPasswordInput" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                     </div>
                     <div class="items-center px-4 py-3 gap-2 flex">
@@ -219,8 +174,8 @@
             const getRawUrl = (path) => `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${path}`;
 
             // --- DOM Elements ---
-            const tabs = { add: addTab, read: readTab, setup: setupTab };
-            const contents = { add: addReviewContent, read: readReviewsContent, setup: setupContent };
+            const tabs = { add: addTab, read: readTab };
+            const contents = { add: addReviewContent, read: readReviewsContent };
             const reviewForm = document.getElementById('reviewForm');
             const reviewsList = document.getElementById('reviewsList');
             const saveToGithubBtn = document.getElementById('saveToGithubBtn');
@@ -229,12 +184,6 @@
             const imageUpload = document.getElementById('imageUpload');
             const imagePreview = document.getElementById('imagePreview');
             const fileName = document.getElementById('fileName');
-            // Setup Tab
-            const patInput = document.getElementById('patInput');
-            const passwordInput = document.getElementById('passwordInput');
-            const encryptBtn = document.getElementById('encryptBtn');
-            const encryptedOutputContainer = document.getElementById('encryptedOutputContainer');
-            const encryptedOutput = document.getElementById('encryptedOutput');
             // Modal
             const passwordModal = document.getElementById('passwordModal');
             const modalPasswordInput = document.getElementById('modalPasswordInput');
@@ -260,24 +209,6 @@
                         true,
                         ['encrypt', 'decrypt']
                     );
-                },
-                // Encrypts text using the derived key
-                async encrypt(text, password) {
-                    const salt = window.crypto.getRandomValues(new Uint8Array(16));
-                    const iv = window.crypto.getRandomValues(new Uint8Array(12));
-                    const key = await this.getKey(password, salt);
-                    const enc = new TextEncoder();
-                    const encodedText = enc.encode(text);
-                    const encryptedContent = await window.crypto.subtle.encrypt(
-                        { name: 'AES-GCM', iv }, key, encodedText
-                    );
-                    // Combine salt, iv, and content into one buffer for storage
-                    const buffer = new Uint8Array(salt.length + iv.length + encryptedContent.byteLength);
-                    buffer.set(salt, 0);
-                    buffer.set(iv, salt.length);
-                    buffer.set(new Uint8Array(encryptedContent), salt.length + iv.length);
-                    // Convert buffer to base64 for JSON storage
-                    return btoa(String.fromCharCode.apply(null, buffer));
                 },
                 // Decrypts base64 data using the derived key
                 async decrypt(base64Data, password) {
@@ -324,10 +255,10 @@
                         content.classList.add('hidden');
                     }
                 });
-                 if (activeTabId === 'read') renderReviews();
+                if (activeTabId === 'read') renderReviews();
             };
 
-            // --- Image Handling (same as before) ---
+            // --- Image Handling ---
             const handleImageUpload = (event) => {
                 const file = event.target.files[0];
                 if (!file) {
@@ -360,11 +291,11 @@
                 reader.readAsDataURL(file);
             };
 
-            // --- Review Management (mostly same as before) ---
+            // --- Review Management ---
             const renderReviews = () => {
                 reviewsList.innerHTML = '';
                 if (reviews.length === 0) {
-                    reviewsList.innerHTML = '<p class="text-gray-500 text-center py-8">No reviews yet. Add a review to get started!</p>';
+                    reviewsList.innerHTML = '<p class="text-gray-500 text-center py-8">No reviews yet. Add one to get started!</p>';
                     return;
                 }
                 reviews.slice().reverse().forEach((review, index) => {
@@ -500,26 +431,7 @@
                     toast.className = toast.className.replace('translate-y-0 opacity-100', 'translate-y-20 opacity-0');
                 }, 4000);
             };
-
-            // Setup Tab Listeners
-            encryptBtn.addEventListener('click', async () => {
-                const pat = patInput.value;
-                const password = passwordInput.value;
-                if (!pat || !password) {
-                    showToast('Please provide both a PAT and a password.', 'error');
-                    return;
-                }
-                try {
-                    const encryptedData = await cryptoUtils.encrypt(pat, password);
-                    encryptedOutput.value = JSON.stringify({ data: encryptedData }, null, 2);
-                    encryptedOutputContainer.classList.remove('hidden');
-                    showToast('Encryption successful! Copy the text below.', 'success');
-                } catch (e) {
-                    showToast('Encryption failed.', 'error');
-                    console.error(e);
-                }
-            });
-
+            
             // Modal Listeners
             saveToGithubBtn.addEventListener('click', () => {
                 passwordModal.classList.remove('hidden');
@@ -539,7 +451,11 @@
                     showToast('Decrypting token...');
                     // 1. Fetch the encrypted PAT file from GitHub
                     const response = await fetch(getRawUrl(ENCRYPTED_PAT_PATH) + `?t=${new Date().getTime()}`);
-                    if (!response.ok) throw new Error('Could not find pat.enc.json in the repo.');
+                    if (response.status === 404) {
+                        throw new Error('Setup not complete: pat.enc.json not found in the repo.');
+                    }
+                    if (!response.ok) throw new Error('Could not fetch the encrypted PAT file.');
+                    
                     const encryptedJson = await response.json();
                     
                     // 2. Decrypt it
@@ -573,4 +489,3 @@
     </script>
 </body>
 </html>
-
