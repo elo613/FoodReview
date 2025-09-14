@@ -57,6 +57,52 @@ document.addEventListener("DOMContentLoaded", () => {
             return await res.json();
         },
 
+        _compressImage(file, options = {}) {
+            return new Promise((resolve, reject) => {
+                const { maxWidth = 800, quality = 0.7 } = options; // Sensible defaults
+                const image = new Image();
+                image.src = URL.createObjectURL(file);
+
+                image.onload = () => {
+                    URL.revokeObjectURL(image.src); // Clean up memory
+                    let { width, height } = image;
+
+                    // Resize if the image is too large
+                    if (width > maxWidth) {
+                        height = (maxWidth / width) * height;
+                        width = maxWidth;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(image, 0, 0, width, height);
+
+                    // Convert canvas to Blob, then to File
+                    canvas.toBlob(
+                        (blob) => {
+                            if (!blob) {
+                                return reject(new Error('Canvas to Blob conversion failed.'));
+                            }
+                            const compressedFile = new File([blob], file.name, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now(),
+                            });
+                            resolve(compressedFile);
+                        },
+                        'image/jpeg', // Force JPEG for better compression
+                        quality
+                    );
+                };
+
+                image.onerror = (error) => {
+                    URL.revokeObjectURL(image.src);
+                    reject(error);
+                };
+            });
+        },
+
         async uploadImage(file, token) {
             const sanitized = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
             const timestamp = Date.now();
@@ -140,8 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
             this.readTab.classList.toggle('tab-active', !isAdd);
             this.addReviewContent.classList.toggle('hidden', !isAdd);
             this.readReviewsContent.classList.toggle('hidden', isAdd);
-            
-            // ✅ CORRECTION 2: Logic for loading button
+
             const button = this.reviewForm.querySelector('button');
             if (button) {
                 button.disabled = isBusy;
@@ -289,8 +334,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     newReview.price = parseFloat(newReview.price).toFixed(2);
                     newReview.timestamp = new Date().toISOString();
                     const file = this.state.imageFile;
-                    if (file) newReview.image = await ApiService.uploadImage(file, this.state.token);
-                    else newReview.image = '';
+
+                    if (file) {
+                        UIManager.showToast("Compressing image...");
+                        const compressedFile = await ApiService._compressImage(file);
+                        newReview.image = await ApiService.uploadImage(compressedFile, this.state.token);
+                    } else {
+                        newReview.image = '';
+                    }
+                    
                     const updated = [...this.state.reviews, newReview];
                     await ApiService.saveReviews(updated, this.state.token);
                     this.setState({ reviews: updated, activeTab: 'read', imageFile: null });
@@ -310,7 +362,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             });
 
-            // ✅ CORRECTION 1: Moved this listener inside bindEvents
             UIManager.imageUpload.addEventListener("change", e => {
                 const file = e.target.files[0];
                 this.setState({ imageFile: file || null });
@@ -318,20 +369,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (file) {
                     this.setState({ isBusy: true });
                     UIManager.showToast("Loading image preview...");
-
                     const reader = new FileReader();
-
                     reader.onload = ev => {
                         UIManager.imagePreview.src = ev.target.result;
                         UIManager.imagePreview.classList.remove('hidden');
                         this.setState({ isBusy: false });
                     };
-
                     reader.onerror = () => {
                         UIManager.showToast("Failed to read image file.", true);
                         this.setState({ isBusy: false });
                     };
-
                     reader.readAsDataURL(file);
                 } else {
                     UIManager.imagePreview.src = '';
