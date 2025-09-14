@@ -66,20 +66,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     quality = 0.6,   // Reduced from 0.7
                     maxFileSize = 2 * 1024 * 1024 // 2MB max
                 } = options;
-        
+
                 // Check file size first
                 if (file.size > 10 * 1024 * 1024) { // 10MB limit
                     return reject(new Error('Image file too large (max 10MB)'));
                 }
-        
+
                 const image = new Image();
                 image.src = URL.createObjectURL(file);
-        
+
                 image.onload = () => {
                     try {
                         URL.revokeObjectURL(image.src);
                         let { width, height } = image;
-        
+
                         // Calculate new dimensions maintaining aspect ratio
                         if (width > maxWidth || height > maxHeight) {
                             const widthRatio = maxWidth / width;
@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             width = Math.floor(width * ratio);
                             height = Math.floor(height * ratio);
                         }
-        
+
                         // Additional check for canvas memory limits
                         const maxCanvasSize = 4096; // Common mobile limit
                         if (width > maxCanvasSize || height > maxCanvasSize) {
@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             width = Math.floor(width * canvasRatio);
                             height = Math.floor(height * canvasRatio);
                         }
-        
+
                         const canvas = document.createElement('canvas');
                         canvas.width = width;
                         canvas.height = height;
@@ -110,14 +110,14 @@ document.addEventListener("DOMContentLoaded", () => {
                         
                         // Draw image
                         ctx.drawImage(image, 0, 0, width, height);
-        
+
                         // Convert to blob with error handling
                         canvas.toBlob(
                             (blob) => {
                                 if (!blob) {
                                     return reject(new Error('Canvas to Blob conversion failed'));
                                 }
-        
+
                                 // Check if compressed size is acceptable
                                 if (blob.size > maxFileSize) {
                                     // Try with lower quality
@@ -147,18 +147,18 @@ document.addEventListener("DOMContentLoaded", () => {
                             'image/jpeg',
                             quality
                         );
-        
+
                     } catch (error) {
                         URL.revokeObjectURL(image.src);
                         reject(new Error(`Image processing failed: ${error.message}`));
                     }
                 };
-        
+
                 image.onerror = (error) => {
                     URL.revokeObjectURL(image.src);
                     reject(new Error('Failed to load image for compression'));
                 };
-        
+
                 // Add timeout for mobile devices
                 setTimeout(() => {
                     if (!image.complete) {
@@ -368,6 +368,127 @@ document.addEventListener("DOMContentLoaded", () => {
             this.bindEvents();
         },
 
+        // Modern approach using createImageBitmap (faster, less memory)
+        async createOptimizedPreview(file) {
+            try {
+                // Create bitmap directly from file (more efficient)
+                const bitmap = await createImageBitmap(file, {
+                    resizeWidth: 400, // Smaller preview size
+                    resizeHeight: 300,
+                    resizeQuality: 'medium'
+                });
+
+                // Create canvas for preview
+                const canvas = document.createElement('canvas');
+                const maxSize = 400;
+                
+                let { width, height } = bitmap;
+                if (width > maxSize || height > maxSize) {
+                    const ratio = Math.min(maxSize / width, maxSize / height);
+                    width = Math.floor(width * ratio);
+                    height = Math.floor(height * ratio);
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(bitmap, 0, 0, width, height);
+                
+                // Clean up bitmap
+                bitmap.close();
+                
+                // Set preview
+                UIManager.imagePreview.src = canvas.toDataURL('image/jpeg', 0.8);
+                UIManager.imagePreview.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Optimized preview failed:', error);
+                this.createFallbackPreview(file);
+            }
+        },
+
+        // Fallback for older browsers
+        createFallbackPreview(file) {
+            // Use smaller chunk size for large files to prevent blocking
+            const chunkSize = 1024 * 1024; // 1MB chunks
+            
+            if (file.size > chunkSize) {
+                // For large files, read in chunks to prevent UI blocking
+                this.readFileInChunks(file);
+            } else {
+                // Small files can be read normally
+                this.readFileDirectly(file);
+            }
+        },
+
+        readFileInChunks(file) {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Create smaller preview to reduce lag
+                    const canvas = document.createElement('canvas');
+                    const maxSize = 300; // Even smaller for chunked loading
+                    
+                    let { width, height } = img;
+                    const ratio = Math.min(maxSize / width, maxSize / height, 1);
+                    width = Math.floor(width * ratio);
+                    height = Math.floor(height * ratio);
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    UIManager.imagePreview.src = canvas.toDataURL('image/jpeg', 0.7);
+                    UIManager.imagePreview.classList.remove('hidden');
+                };
+                
+                img.onerror = () => {
+                    UIManager.showToast("Failed to create image preview.", true);
+                    UIManager.imagePreview.classList.add('hidden');
+                };
+                
+                img.src = e.target.result;
+            };
+            
+            reader.onerror = () => {
+                UIManager.showToast("Failed to read image file.", true);
+                UIManager.imagePreview.classList.add('hidden');
+            };
+            
+            // Read file
+            reader.readAsDataURL(file);
+        },
+
+        readFileDirectly(file) {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                UIManager.imagePreview.src = e.target.result;
+                UIManager.imagePreview.classList.remove('hidden');
+            };
+            
+            reader.onerror = () => {
+                UIManager.showToast("Failed to read image file.", true);
+                UIManager.imagePreview.classList.add('hidden');
+            };
+            
+            reader.readAsDataURL(file);
+        },
+
+        createImagePreview(file) {
+            // Use createImageBitmap for better performance if available
+            if ('createImageBitmap' in window) {
+                this.createOptimizedPreview(file);
+            } else {
+                this.createFallbackPreview(file);
+            }
+        },
+
         bindEvents() {
             UIManager.loginForm.addEventListener("submit", e => {
                 e.preventDefault();
@@ -394,6 +515,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             UIManager.reviewForm.addEventListener("submit", e => {
                 e.preventDefault();
+                
+                // Prevent double submission
+                if (this.state.isBusy) return;
+                
                 this.withLoading(async () => {
                     const form = e.target;
                     const newReview = Object.fromEntries(new FormData(form));
@@ -402,9 +527,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     const file = this.state.imageFile;
 
                     if (file) {
-                        UIManager.showToast("Compressing image...");
-                        const compressedFile = await ApiService._compressImage(file);
-                        newReview.image = await ApiService.uploadImage(compressedFile, this.state.token);
+                        UIManager.showToast("Processing image...");
+                        try {
+                            const compressedFile = await ApiService._compressImage(file, {
+                                maxWidth: /Mobi|Android/i.test(navigator.userAgent) ? 600 : 800,
+                                quality: /Mobi|Android/i.test(navigator.userAgent) ? 0.6 : 0.7
+                            });
+                            newReview.image = await ApiService.uploadImage(compressedFile, this.state.token);
+                        } catch (compressionError) {
+                            UIManager.showToast(`Image processing failed: ${compressionError.message}`, true);
+                            return; // Don't continue with form submission
+                        }
                     } else {
                         newReview.image = '';
                     }
@@ -430,26 +563,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
             UIManager.imageUpload.addEventListener("change", e => {
                 const file = e.target.files[0];
-                this.setState({ imageFile: file || null });
-
-                if (file) {
-                    this.setState({ isBusy: true });
-                    UIManager.showToast("Loading image preview...");
-                    const reader = new FileReader();
-                    reader.onload = ev => {
-                        UIManager.imagePreview.src = ev.target.result;
-                        UIManager.imagePreview.classList.remove('hidden');
-                        this.setState({ isBusy: false });
-                    };
-                    reader.onerror = () => {
-                        UIManager.showToast("Failed to read image file.", true);
-                        this.setState({ isBusy: false });
-                    };
-                    reader.readAsDataURL(file);
-                } else {
+                
+                if (!file) {
+                    this.setState({ imageFile: null });
                     UIManager.imagePreview.src = '';
                     UIManager.imagePreview.classList.add('hidden');
+                    return;
                 }
+
+                // Validate file type immediately
+                if (!file.type.startsWith('image/')) {
+                    UIManager.showToast("Please select a valid image file.", true);
+                    e.target.value = '';
+                    return;
+                }
+
+                // Check file size and warn user
+                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+                console.log(`Selected image: ${file.name}, Size: ${fileSizeMB}MB`);
+                
+                if (file.size > 15 * 1024 * 1024) { // 15MB limit
+                    UIManager.showToast("Image file too large (max 15MB). Please choose a smaller image.", true);
+                    e.target.value = '';
+                    return;
+                }
+
+                // Store the file immediately (no lag here)
+                this.setState({ imageFile: file });
+
+                // Show loading state for preview
+                UIManager.imagePreview.classList.remove('hidden');
+                UIManager.imagePreview.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzlmYTZiYiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+TG9hZGluZy4uLjwvdGV4dD48L3N2Zz4='; // Loading placeholder
+                
+                if (fileSizeMB > 2) {
+                    UIManager.showToast(`Processing ${fileSizeMB}MB image - this may take a moment...`);
+                }
+
+                // Create preview asynchronously with proper error handling
+                this.createImagePreview(file);
             });
 
             UIManager.addTab.addEventListener("click", () => this.setState({ activeTab: 'add' }));
