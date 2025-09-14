@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const GITHUB_OWNER = "elo613";
-  const GITHUB_REPO = "FoodReview";
+  const GITHUB_REPO = "PrivateFoodData";
   const REVIEWS_FILE_PATH = "reviews.json";
   const PAT_FILE = "pat.enc.json";
 
