@@ -140,7 +140,13 @@ document.addEventListener("DOMContentLoaded", () => {
             this.readTab.classList.toggle('tab-active', !isAdd);
             this.addReviewContent.classList.toggle('hidden', !isAdd);
             this.readReviewsContent.classList.toggle('hidden', isAdd);
-            this.reviewForm.querySelector('button').disabled = isBusy;
+            
+            // ✅ CORRECTION 2: Logic for loading button
+            const button = this.reviewForm.querySelector('button');
+            if (button) {
+                button.disabled = isBusy;
+                button.classList.toggle('loading', isBusy);
+            }
         },
 
         resetForm() {
@@ -304,36 +310,34 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             });
 
-UIManager.imageUpload.addEventListener("change", e => {
-    const file = e.target.files[0];
-    this.setState({ imageFile: file || null });
+            // ✅ CORRECTION 1: Moved this listener inside bindEvents
+            UIManager.imageUpload.addEventListener("change", e => {
+                const file = e.target.files[0];
+                this.setState({ imageFile: file || null });
 
-    if (file) {
-        // Set the app to a busy state immediately
-        this.setState({ isBusy: true });
-        UIManager.showToast("Loading image preview...");
+                if (file) {
+                    this.setState({ isBusy: true });
+                    UIManager.showToast("Loading image preview...");
 
-        const reader = new FileReader();
+                    const reader = new FileReader();
 
-        reader.onload = ev => {
-            UIManager.imagePreview.src = ev.target.result;
-            UIManager.imagePreview.classList.remove('hidden');
-            // IMPORTANT: Re-enable the form once the preview is ready
-            this.setState({ isBusy: false }); 
-        };
+                    reader.onload = ev => {
+                        UIManager.imagePreview.src = ev.target.result;
+                        UIManager.imagePreview.classList.remove('hidden');
+                        this.setState({ isBusy: false });
+                    };
 
-        reader.onerror = () => {
-            UIManager.showToast("Failed to read image file.", true);
-            // Also re-enable the form on failure
-            this.setState({ isBusy: false }); 
-        };
+                    reader.onerror = () => {
+                        UIManager.showToast("Failed to read image file.", true);
+                        this.setState({ isBusy: false });
+                    };
 
-        reader.readAsDataURL(file);
-    } else {
-        UIManager.imagePreview.src = '';
-        UIManager.imagePreview.classList.add('hidden');
-    }
-});
+                    reader.readAsDataURL(file);
+                } else {
+                    UIManager.imagePreview.src = '';
+                    UIManager.imagePreview.classList.add('hidden');
+                }
+            });
 
             UIManager.addTab.addEventListener("click", () => this.setState({ activeTab: 'add' }));
             UIManager.readTab.addEventListener("click", () => this.setState({ activeTab: 'read' }));
