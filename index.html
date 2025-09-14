@@ -95,8 +95,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- 1. API Service: Handles all GitHub communication ---
     const ApiService = {
-        _getApiUrl: (path) => `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`,
-        _getRawUrl: (path) => `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${path}`,
+        _getApiUrl: (path) => `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(path)}`,
+        _getRawUrl: (path) => `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${encodeURIComponent(path)}`,
 
         // NOTE: This XOR cipher is for obfuscation only and provides no real security.
         // It should not be used in a production application with multiple users.
@@ -151,41 +151,95 @@ document.addEventListener("DOMContentLoaded", () => {
         },
 
         async uploadImage(file, token) {
-            const base64Content = await this._resizeImage(file);
-            const fileName = `images/${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-            const url = this._getApiUrl(fileName);
-            const res = await fetch(url, {
-                method: "PUT",
-                headers: { Authorization: `token ${token}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ message: `Upload image: ${file.name}`, content: base64Content }),
-            });
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(`Image upload failed: ${err.message}`);
+            try {
+                const base64Content = await this._resizeImage(file);
+                const timestamp = Date.now();
+                const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                const fileName = `images/${timestamp}_${sanitizedName}`;
+                const url = this._getApiUrl(fileName);
+                
+                const requestBody = {
+                    message: `Upload image: ${file.name}`,
+                    content: base64Content
+                };
+
+                console.log('Uploading to URL:', url);
+                
+                const res = await fetch(url, {
+                    method: "PUT",
+                    headers: { 
+                        Authorization: `token ${token}`, 
+                        "Content-Type": "application/json" 
+                    },
+                    body: JSON.stringify(requestBody),
+                });
+                
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    console.error('Upload error response:', errorText);
+                    throw new Error(`Image upload failed: ${res.status} ${res.statusText}`);
+                }
+                
+                const data = await res.json();
+                return data.content.download_url;
+            } catch (error) {
+                console.error('Image upload error:', error);
+                throw error;
             }
-            const data = await res.json();
-            return data.content.download_url;
         },
 
         async saveReviews(reviews, token) {
-            const url = this._getApiUrl(REVIEWS_FILE_PATH);
-            let sha = null;
             try {
-                const res = await fetch(url, { headers: { Authorization: `token ${token}` } });
-                if (res.ok) sha = (await res.json()).sha;
-            } catch (e) {
-                console.warn("Could not retrieve file SHA. Proceeding without it.");
-            }
-            const content = btoa(unescape(encodeURIComponent(JSON.stringify(reviews, null, 2))));
-            const body = { message: `Update reviews ${new Date().toISOString()}`, content, ...(sha && { sha }) };
-            const res = await fetch(url, {
-                method: "PUT",
-                headers: { Authorization: `token ${token}`, "Content-Type": "application/json" },
-                body: JSON.stringify(body),
-            });
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(`Failed to save reviews: ${err.message}`);
+                const url = this._getApiUrl(REVIEWS_FILE_PATH);
+                let sha = null;
+                
+                // Try to get existing file SHA
+                try {
+                    const existingRes = await fetch(url, { 
+                        headers: { Authorization: `token ${token}` } 
+                    });
+                    if (existingRes.ok) {
+                        const existingData = await existingRes.json();
+                        sha = existingData.sha;
+                    }
+                } catch (e) {
+                    console.warn("Could not retrieve file SHA. Creating new file.");
+                }
+                
+                // Prepare the content
+                const jsonContent = JSON.stringify(reviews, null, 2);
+                const base64Content = btoa(unescape(encodeURIComponent(jsonContent)));
+                
+                const requestBody = { 
+                    message: `Update reviews ${new Date().toISOString()}`, 
+                    content: base64Content
+                };
+                
+                if (sha) {
+                    requestBody.sha = sha;
+                }
+                
+                console.log('Saving to URL:', url);
+                
+                const res = await fetch(url, {
+                    method: "PUT",
+                    headers: { 
+                        Authorization: `token ${token}`, 
+                        "Content-Type": "application/json" 
+                    },
+                    body: JSON.stringify(requestBody),
+                });
+                
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    console.error('Save error response:', errorText);
+                    throw new Error(`Failed to save reviews: ${res.status} ${res.statusText}`);
+                }
+                
+                return await res.json();
+            } catch (error) {
+                console.error('Save reviews error:', error);
+                throw error;
             }
         },
     };
@@ -367,7 +421,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     const imageFile = elements.imageUpload.files[0];
                     let imageUrl = "";
 
-                    if (imageFile) imageUrl = await ApiService.uploadImage(imageFile, this.state.token);
+                    if (imageFile) {
+                        UIManager.showToast("Uploading image...");
+                        imageUrl = await ApiService.uploadImage(imageFile, this.state.token);
+                    }
                     
                     const newReview = Object.fromEntries(new FormData(form));
                     newReview.price = parseFloat(newReview.price).toFixed(2);
@@ -375,6 +432,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     newReview.timestamp = new Date().toISOString();
                     
                     const updatedReviews = [...this.state.reviews, newReview];
+                    UIManager.showToast("Saving review...");
                     await ApiService.saveReviews(updatedReviews, this.state.token);
                     
                     this.setState({ reviews: updatedReviews, activeTab: 'read' });
@@ -384,16 +442,16 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             elements.reviewsList.addEventListener('click', (e) => {
-                if (e.target.dataset.action !== 'delete' || !confirm("Are you sure?")) return;
+                if (e.target.dataset.action !== 'delete' || !confirm("Are you sure you want to delete this review?")) return;
                 this.withLoadingState(async () => {
                     UIManager.showToast("Deleting review...");
                     const index = parseInt(e.target.closest('[data-index]').dataset.index, 10);
                     const updatedReviews = this.state.reviews.filter((_, i) => i !== index);
                     await ApiService.saveReviews(updatedReviews, this.state.token);
                     this.setState({ reviews: updatedReviews });
-                    UIManager.showToast("Review deleted.");
+                    UIManager.showToast("Review deleted successfully!");
                 });
-});
+            });
             
             elements.imageUpload.addEventListener("change", (e) => {
                 const file = e.target.files[0];
