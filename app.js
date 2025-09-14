@@ -213,7 +213,7 @@ async uploadImage(file,token){
 
       if(this.state.token && ApiService._isValidGitHubToken(this.state.token)){
         await this.withLoading(async()=>{
-          const reviews = await ApiService.fetchReviews();
+          const reviews = await ApiService.fetchReviews(this.state.token); 
           this.setState({reviews});
         });
       } else {
@@ -233,7 +233,7 @@ async uploadImage(file,token){
           try{
             const token = await ApiService.getPat(UIManager.loginPassword.value);
             sessionStorage.setItem('github_pat',token);
-            const reviews = await ApiService.fetchReviews();
+            const reviews = await ApiService.fetchReviews(token); 
             this.setState({token,reviews,activeTab:'read'});
           }catch(err){
             UIManager.loginError.textContent = err.message;
