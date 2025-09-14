@@ -152,6 +152,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         async uploadImage(file, token) {
             try {
+                // Validate inputs
+                if (!token || typeof token !== 'string' || token.trim() === '') {
+                    throw new Error('Invalid or missing authentication token');
+                }
+                
                 const base64Content = await this._resizeImage(file);
                 const timestamp = Date.now();
                 const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -164,15 +169,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 };
 
                 console.log('Uploading to URL:', url);
+                console.log('Token length:', token.length);
                 
-                const res = await fetch(url, {
+                const fetchOptions = {
                     method: "PUT",
                     headers: { 
-                        Authorization: `token ${token}`, 
-                        "Content-Type": "application/json" 
+                        'Authorization': `Bearer ${token.trim()}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json',
+                        'User-Agent': 'Food-Review-App'
                     },
                     body: JSON.stringify(requestBody),
-                });
+                };
+                
+                const res = await fetch(url, fetchOptions);
                 
                 if (!res.ok) {
                     const errorText = await res.text();
