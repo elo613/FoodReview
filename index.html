@@ -1,52 +1,4 @@
-_isValidGitHubToken(token) {
-            // Check if token is a string and has reasonable length
-            if (!token || typeof token !== 'string') {
-                return false;
-            }
-            
-            // Trim whitespace
-            token = token.trim();
-            
-            // Check minimum length (GitHub tokens are typically 40+ characters)
-            if (token.length < 20) {
-                return false;
-            }
-            
-            // Check for valid GitHub token prefixes
-            const validPrefixes = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_', 'github_pat_'];
-            const hasValidPrefix = validPrefixes.some(prefix => token.startsWith(prefix));
-            
-            // If it doesn't have a valid prefix, check if it looks like a valid token
-            // (alphanumeric characters, underscores, no obvious garbage characters)
-            if (!hasValidPrefix) {
-                // Check for obvious decryption failure indicators
-                const hasGarbageChars = /[^\w\-_]/.test(token);
-                if (hasGarbageChars) {
-                    return false;
-                }
-                
-                // For older token formats, be more lenient but still validate
-                if (token.length < 30) {
-                    return false;
-                }
-            }
-            
-            // Check for common decryption failure patterns
-            const failurePatterns = [
-                'undefined',
-                'null',
-                'NaN',
-                '\x00', // null bytes
-                '���',   // replacement characters
-            ];
-            
-            const hasFailurePattern = failurePatterns.some(pattern => token.includes(pattern));
-            if (hasFailurePattern) {
-                return false;
-            }
-            
-            return true;
-        }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -146,6 +98,56 @@ document.addEventListener("DOMContentLoaded", () => {
         _getApiUrl: (path) => `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(path)}`,
         _getRawUrl: (path) => `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${encodeURIComponent(path)}`,
 
+        _isValidGitHubToken(token) {
+            // Check if token is a string and has reasonable length
+            if (!token || typeof token !== 'string') {
+                return false;
+            }
+
+            // Trim whitespace
+            token = token.trim();
+
+            // Check minimum length (GitHub tokens are typically 40+ characters)
+            if (token.length < 20) {
+                return false;
+            }
+
+            // Check for valid GitHub token prefixes
+            const validPrefixes = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_', 'github_pat_'];
+            const hasValidPrefix = validPrefixes.some(prefix => token.startsWith(prefix));
+
+            // If it doesn't have a valid prefix, check if it looks like a valid token
+            // (alphanumeric characters, underscores, no obvious garbage characters)
+            if (!hasValidPrefix) {
+                // Check for obvious decryption failure indicators
+                const hasGarbageChars = /[^\w\-_]/.test(token);
+                if (hasGarbageChars) {
+                    return false;
+                }
+                
+                // For older token formats, be more lenient but still validate
+                if (token.length < 30) {
+                    return false;
+                }
+            }
+
+            // Check for common decryption failure patterns
+            const failurePatterns = [
+                'undefined',
+                'null',
+                'NaN',
+                '\x00', // null bytes
+                '',   // replacement characters
+            ];
+
+            const hasFailurePattern = failurePatterns.some(pattern => token.includes(pattern));
+            if (hasFailurePattern) {
+                return false;
+            }
+
+            return true;
+        },
+
         // NOTE: This XOR cipher is for obfuscation only and provides no real security.
         // It should not be used in a production application with multiple users.
         _xorCipher: (str, key) => str.split('').map((char, i) => String.fromCharCode(char.charCodeAt(0) ^ key.charCodeAt(i % key.length))).join(''),
@@ -155,7 +157,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch(`${this._getRawUrl(PAT_FILE)}?t=${Date.now()}`);
             if (!res.ok) throw new Error("Could not fetch PAT file. Ensure it exists in the repo.");
             const { data } = await res.json();
-            return this._decryptPat(data, password);
+            const token = this._decryptPat(data, password);
+            if (!this._isValidGitHubToken(token)) {
+                throw new Error('Token decryption failed or token is invalid. Check password.');
+            }
+            return token;
         },
 
         async fetchReviews() {
@@ -200,9 +206,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         async uploadImage(file, token) {
             try {
-                // Validate inputs
-                if (!token || typeof token !== 'string' || token.trim() === '') {
-                    throw new Error('Invalid or missing authentication token');
+                if (!this._isValidGitHubToken(token)) {
+                    throw new Error('Invalid or missing authentication token.');
                 }
                 
                 const base64Content = await this._resizeImage(file);
@@ -216,9 +221,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     content: base64Content
                 };
 
-                console.log('Uploading to URL:', url);
-                console.log('Token length:', token.length);
-                
                 const fetchOptions = {
                     method: "PUT",
                     headers: { 
@@ -248,9 +250,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         async saveReviews(reviews, token) {
             try {
-                // Validate inputs
-                if (!token || typeof token !== 'string' || token.trim() === '') {
-                    throw new Error('Invalid or missing authentication token');
+                if (!this._isValidGitHubToken(token)) {
+                    throw new Error('Invalid or missing authentication token.');
                 }
                 
                 if (!Array.isArray(reviews)) {
@@ -277,14 +278,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.warn("Could not retrieve file SHA. Creating new file.");
                 }
                 
-                // Prepare the content - ensure proper JSON formatting
                 const jsonContent = JSON.stringify(reviews, null, 2);
-                console.log('JSON content to save:', jsonContent);
-                
-                // Use proper UTF-8 encoding for base64
-                const base64Content = btoa(jsonContent);
-                console.log('Base64 content length:', base64Content.length);
-                
+                const base64Content = btoa(new TextEncoder().encode(jsonContent).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+
                 const requestBody = { 
                     message: `Update reviews ${new Date().toISOString()}`, 
                     content: base64Content
@@ -292,20 +288,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 if (sha) {
                     requestBody.sha = sha;
-                }
-                
-                console.log('Saving to URL:', url);
-                console.log('Token (first 10 chars):', token.substring(0, 10));
-                console.log('Request body keys:', Object.keys(requestBody));
-                
-                // More flexible token validation - GitHub tokens can have various formats
-                if (token.length < 20) {
-                    throw new Error('Token appears too short. Please check your PAT encryption/decryption.');
-                }
-                
-                // Check for common non-token strings that might indicate decryption issues
-                if (token.includes('undefined') || token.includes('null') || token.trim() === '') {
-                    throw new Error('Token decryption failed. Please check your password and PAT file.');
                 }
                 
                 const fetchOptions = {
@@ -318,9 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     },
                     body: JSON.stringify(requestBody)
                 };
-                
-                console.log('Request headers:', Object.keys(fetchOptions.headers));
-                
+
                 const res = await fetch(url, fetchOptions);
                                 
                 if (!res.ok) {
@@ -477,11 +457,13 @@ document.addEventListener("DOMContentLoaded", () => {
             UIManager.populateRatingSelectors();
             this.setState({ activeTab: 'read' }); // Set initial view
 
-            if (this.state.token) {
+            if (this.state.token && ApiService._isValidGitHubToken(this.state.token)) {
                 await this.withLoadingState(async () => {
                     const reviews = await ApiService.fetchReviews();
                     this.setState({ reviews });
                 });
+            } else {
+                 this.setState({ token: null }); // Clear invalid token from state
             }
         },
 
@@ -490,7 +472,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
             elements.loginForm.addEventListener("submit", (e) => {
                 e.preventDefault();
-                UIManager.setLoginState({ isLoading: true });
+                UIManager.setLoginState({ isLoading: true, error: null });
             
                 const handleLogin = async () => {
                     try {
@@ -506,7 +488,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 };
             
-                this.withLoadingState(handleLogin);
+                handleLogin(); // No need for withLoadingState here as setLoginState manages UI
             });
 
             elements.logoutBtn.addEventListener("click", () => {
