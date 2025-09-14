@@ -17,7 +17,7 @@
         .tab {
             border-bottom-color: transparent;
         }
-        .tab-content {
+        .tab-content, .modal {
             animation: fadeIn 0.5s ease-in-out;
         }
         @keyframes fadeIn {
@@ -27,6 +27,9 @@
         /* Hide the default file input */
         input[type="file"] {
             display: none;
+        }
+        .modal-overlay {
+            animation: fadeIn 0.3s ease-in-out;
         }
     </style>
 </head>
@@ -47,16 +50,19 @@
                 <button id="readTab" class="tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none">
                     Read Reviews
                 </button>
+                <button id="setupTab" class="tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none">
+                    Setup
+                </button>
             </nav>
         </div>
 
         <!-- Tab Content -->
         <main>
-            <!-- Add Review Tab Content -->
+            <!-- Add Review Tab Content (same as before) -->
             <div id="addReviewContent" class="tab-content bg-white p-6 rounded-lg shadow-md">
                 <form id="reviewForm" class="space-y-6">
-                    <!-- Restaurant & Food Item -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <!-- Restaurant & Food Item -->
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label for="restaurant" class="block text-sm font-medium text-gray-700">Restaurant</label>
                             <input type="text" id="restaurant" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
@@ -66,21 +72,16 @@
                             <input type="text" id="foodItem" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                         </div>
                     </div>
-                    
                     <!-- Price -->
                     <div>
                         <label for="price" class="block text-sm font-medium text-gray-700">Price (£)</label>
                         <input type="number" id="price" step="0.01" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                     </div>
-
                     <!-- Image Upload -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Photo</label>
                         <div class="mt-1 flex items-center gap-4">
-                            <!-- Custom button for file input -->
-                            <label for="imageUpload" class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                Choose Image
-                            </label>
+                            <label for="imageUpload" class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Choose Image</label>
                             <input type="file" id="imageUpload" accept="image/*">
                             <p id="fileName" class="text-sm text-gray-500">No file chosen</p>
                         </div>
@@ -88,7 +89,6 @@
                             <img id="imagePreview" src="" alt="Image Preview" class="hidden max-h-60 rounded-lg shadow-sm"/>
                         </div>
                     </div>
-
                     <!-- Ratings -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                         <div>
@@ -108,7 +108,6 @@
                             <select id="value" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select>
                         </div>
                     </div>
-
                     <!-- Would Eat Here Again -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <fieldset>
@@ -126,11 +125,10 @@
                             </div>
                         </fieldset>
                     </div>
-
                     <!-- Submit Button -->
                     <div class="flex justify-end">
                         <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            Save Review
+                            Add Review
                         </button>
                     </div>
                 </form>
@@ -142,51 +140,164 @@
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                         <h2 class="text-2xl font-semibold text-gray-800">Your Reviews</h2>
                         <div class="flex items-center gap-2">
-                             <label for="fileInput" class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                Load from File
-                            </label>
-                            <input type="file" id="fileInput" accept=".json">
-                            <button id="saveToFileBtn" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-                                Save to File
+                            <button id="saveToGithubBtn" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                                Save to GitHub
                             </button>
                         </div>
                     </div>
                     <div id="reviewsList" class="space-y-6">
-                        <p class="text-gray-500 text-center py-8">No reviews yet. Add one to get started!</p>
+                        <p class="text-gray-500 text-center py-8">Loading reviews...</p>
                     </div>
                 </div>
             </div>
+
+            <!-- Setup Tab Content -->
+            <div id="setupContent" class="tab-content hidden">
+                <div class="bg-white p-6 rounded-lg shadow-md space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-semibold text-gray-800">One-Time PAT Setup</h2>
+                        <div class="mt-2 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
+                            <p class="font-bold">Security Warning</p>
+                            <p>This method is highly insecure. Your PAT can be intercepted if someone gains access to this page and your password. Proceed with extreme caution.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="patInput" class="block text-sm font-medium text-gray-700">GitHub Personal Access Token (with `repo` scope)</label>
+                        <input type="password" id="patInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="passwordInput" class="block text-sm font-medium text-gray-700">Enter a Strong Password (to encrypt the token)</label>
+                        <input type="password" id="passwordInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    </div>
+                    <div class="flex justify-end">
+                        <button id="encryptBtn" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                            Generate Encrypted Token
+                        </button>
+                    </div>
+                    <div id="encryptedOutputContainer" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700">Save this content to `pat.enc.json` in your repo:</label>
+                        <textarea id="encryptedOutput" readonly class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm font-mono" rows="8"></textarea>
+                    </div>
+                </div>
+            </div>
+
         </main>
         
         <!-- Toast Notification -->
         <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300">
             <p id="toastMessage"></p>
         </div>
+
+        <!-- Password Modal -->
+        <div id="passwordModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden modal-overlay">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white modal">
+                <div class="mt-3 text-center">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Enter Password</h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p class="text-sm text-gray-500 mb-4">Enter the password to decrypt your token and save to GitHub.</p>
+                        <input type="password" id="modalPasswordInput" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    </div>
+                    <div class="items-center px-4 py-3 gap-2 flex">
+                        <button id="cancelModalBtn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md w-full hover:bg-gray-300">Cancel</button>
+                        <button id="confirmModalBtn" class="px-4 py-2 bg-green-600 text-white rounded-md w-full hover:bg-green-700">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // DOM Elements
-            const addTab = document.getElementById('addTab');
-            const readTab = document.getElementById('readTab');
-            const addReviewContent = document.getElementById('addReviewContent');
-            const readReviewsContent = document.getElementById('readReviewsContent');
+            // --- GitHub Configuration ---
+            const GITHUB_OWNER = 'elo613';
+            const GITHUB_REPO = 'FoodReviews';
+            const REVIEWS_FILE_PATH = 'reviews.json';
+            const ENCRYPTED_PAT_PATH = 'pat.enc.json';
+            
+            const getApiUrl = (path) => `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`;
+            const getRawUrl = (path) => `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${path}`;
+
+            // --- DOM Elements ---
+            const tabs = { add: addTab, read: readTab, setup: setupTab };
+            const contents = { add: addReviewContent, read: readReviewsContent, setup: setupContent };
             const reviewForm = document.getElementById('reviewForm');
             const reviewsList = document.getElementById('reviewsList');
-            const saveToFileBtn = document.getElementById('saveToFileBtn');
-            const fileInput = document.getElementById('fileInput');
+            const saveToGithubBtn = document.getElementById('saveToGithubBtn');
             const toast = document.getElementById('toast');
             const toastMessage = document.getElementById('toastMessage');
             const imageUpload = document.getElementById('imageUpload');
             const imagePreview = document.getElementById('imagePreview');
             const fileName = document.getElementById('fileName');
+            // Setup Tab
+            const patInput = document.getElementById('patInput');
+            const passwordInput = document.getElementById('passwordInput');
+            const encryptBtn = document.getElementById('encryptBtn');
+            const encryptedOutputContainer = document.getElementById('encryptedOutputContainer');
+            const encryptedOutput = document.getElementById('encryptedOutput');
+            // Modal
+            const passwordModal = document.getElementById('passwordModal');
+            const modalPasswordInput = document.getElementById('modalPasswordInput');
+            const cancelModalBtn = document.getElementById('cancelModalBtn');
+            const confirmModalBtn = document.getElementById('confirmModalBtn');
 
-            // App State
+            // --- App State ---
             let reviews = [];
             let currentImageDataUrl = null;
 
+            // --- Crypto Functions ---
+            const cryptoUtils = {
+                // Derives a key from a password and salt using PBKDF2
+                async getKey(password, salt) {
+                    const enc = new TextEncoder();
+                    const keyMaterial = await window.crypto.subtle.importKey(
+                        'raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']
+                    );
+                    return window.crypto.subtle.deriveKey(
+                        { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+                        keyMaterial,
+                        { name: 'AES-GCM', length: 256 },
+                        true,
+                        ['encrypt', 'decrypt']
+                    );
+                },
+                // Encrypts text using the derived key
+                async encrypt(text, password) {
+                    const salt = window.crypto.getRandomValues(new Uint8Array(16));
+                    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+                    const key = await this.getKey(password, salt);
+                    const enc = new TextEncoder();
+                    const encodedText = enc.encode(text);
+                    const encryptedContent = await window.crypto.subtle.encrypt(
+                        { name: 'AES-GCM', iv }, key, encodedText
+                    );
+                    // Combine salt, iv, and content into one buffer for storage
+                    const buffer = new Uint8Array(salt.length + iv.length + encryptedContent.byteLength);
+                    buffer.set(salt, 0);
+                    buffer.set(iv, salt.length);
+                    buffer.set(new Uint8Array(encryptedContent), salt.length + iv.length);
+                    // Convert buffer to base64 for JSON storage
+                    return btoa(String.fromCharCode.apply(null, buffer));
+                },
+                // Decrypts base64 data using the derived key
+                async decrypt(base64Data, password) {
+                    // Convert base64 back to buffer
+                    const buffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+                    // Extract salt, iv, and content from the buffer
+                    const salt = buffer.slice(0, 16);
+                    const iv = buffer.slice(16, 28);
+                    const data = buffer.slice(28);
+                    const key = await this.getKey(password, salt);
+                    const decryptedContent = await window.crypto.subtle.decrypt(
+                        { name: 'AES-GCM', iv }, key, data
+                    );
+                    const dec = new TextDecoder();
+                    return dec.decode(decryptedContent);
+                }
+            };
+            
             // --- Initialization ---
-            const init = () => {
+            const init = async () => {
                 ['taste', 'texture', 'size', 'value'].forEach(id => {
                     const select = document.getElementById(id);
                     for (let i = 1; i <= 10; i++) {
@@ -196,31 +307,27 @@
                         select.appendChild(option);
                     }
                 });
-                
-                const storedReviews = localStorage.getItem('foodReviews');
-                if(storedReviews) {
-                    reviews = JSON.parse(storedReviews);
-                    renderReviews();
-                }
-            };
-            
-            // --- Tab Management ---
-            const switchTab = (activeTab) => {
-                if(activeTab === 'add') {
-                    addTab.classList.add('tab-active');
-                    readTab.classList.remove('tab-active');
-                    addReviewContent.classList.remove('hidden');
-                    readReviewsContent.classList.add('hidden');
-                } else {
-                    readTab.classList.add('tab-active');
-                    addTab.classList.remove('tab-active');
-                    readReviewsContent.classList.remove('hidden');
-                    addReviewContent.classList.add('hidden');
-                    renderReviews();
-                }
+                await loadReviewsFromUrl();
+                renderReviews();
             };
 
-            // --- Image Handling ---
+            // --- Tab Management ---
+            const switchTab = (activeTabId) => {
+                Object.keys(tabs).forEach(id => {
+                    const tab = tabs[id];
+                    const content = contents[id];
+                    if (id === activeTabId) {
+                        tab.classList.add('tab-active');
+                        content.classList.remove('hidden');
+                    } else {
+                        tab.classList.remove('tab-active');
+                        content.classList.add('hidden');
+                    }
+                });
+                 if (activeTabId === 'read') renderReviews();
+            };
+
+            // --- Image Handling (same as before) ---
             const handleImageUpload = (event) => {
                 const file = event.target.files[0];
                 if (!file) {
@@ -229,10 +336,7 @@
                     fileName.textContent = 'No file chosen';
                     return;
                 }
-                
                 fileName.textContent = file.name;
-
-                // Resize and convert image to Data URL to save space
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = new Image();
@@ -240,26 +344,13 @@
                         const canvas = document.createElement('canvas');
                         const MAX_WIDTH = 800;
                         const MAX_HEIGHT = 800;
-                        let width = img.width;
-                        let height = img.height;
-
-                        if (width > height) {
-                            if (width > MAX_WIDTH) {
-                                height *= MAX_WIDTH / width;
-                                width = MAX_WIDTH;
-                            }
-                        } else {
-                            if (height > MAX_HEIGHT) {
-                                width *= MAX_HEIGHT / height;
-                                height = MAX_HEIGHT;
-                            }
-                        }
+                        let { width, height } = img;
+                        if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                        } else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
                         canvas.width = width;
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-
-                        // Use JPEG for better compression, quality 0.8
                         currentImageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
                         imagePreview.src = currentImageDataUrl;
                         imagePreview.classList.remove('hidden');
@@ -269,21 +360,18 @@
                 reader.readAsDataURL(file);
             };
 
-            // --- Review Management ---
+            // --- Review Management (mostly same as before) ---
             const renderReviews = () => {
                 reviewsList.innerHTML = '';
                 if (reviews.length === 0) {
-                    reviewsList.innerHTML = '<p class="text-gray-500 text-center py-8">No reviews yet. Add a review or load a file!</p>';
+                    reviewsList.innerHTML = '<p class="text-gray-500 text-center py-8">No reviews yet. Add a review to get started!</p>';
                     return;
                 }
-                
-                reviews.slice().reverse().forEach((review, index) => { // Show newest first
+                reviews.slice().reverse().forEach((review, index) => {
                     const actualIndex = reviews.length - 1 - index;
                     const reviewElement = document.createElement('div');
                     reviewElement.className = 'p-4 border rounded-lg bg-gray-50 shadow-sm';
-                    
                     const imageHTML = review.imageDataUrl ? `<img src="${review.imageDataUrl}" alt="${review.foodItem}" class="mt-4 w-full h-auto max-h-80 object-cover rounded-md">` : '';
-
                     reviewElement.innerHTML = `
                         <div class="flex justify-between items-start">
                             <div>
@@ -303,82 +391,106 @@
                             <p><span class="font-semibold">Eat again? (EL):</span> ${review.eatAgainEL}</p>
                             <p><span class="font-semibold">Eat again? (AG):</span> ${review.eatAgainAG}</p>
                         </div>
-                        ${imageHTML}
-                    `;
+                        ${imageHTML}`;
                     reviewsList.appendChild(reviewElement);
                 });
             };
-
             const addReview = (e) => {
                 e.preventDefault();
-                const newReview = {
-                    restaurant: document.getElementById('restaurant').value,
-                    foodItem: document.getElementById('foodItem').value,
-                    price: parseFloat(document.getElementById('price').value).toFixed(2),
-                    taste: document.getElementById('taste').value,
-                    texture: document.getElementById('texture').value,
-                    size: document.getElementById('size').value,
-                    value: document.getElementById('value').value,
-                    eatAgainEL: document.querySelector('input[name="eatAgainEL"]:checked').value,
-                    eatAgainAG: document.querySelector('input[name="eatAgainAG"]:checked').value,
-                    imageDataUrl: currentImageDataUrl
-                };
+                const newReview = { restaurant: restaurant.value, foodItem: foodItem.value, price: parseFloat(price.value).toFixed(2), taste: taste.value, texture: texture.value, size: size.value, value: value.value, eatAgainEL: document.querySelector('input[name="eatAgainEL"]:checked').value, eatAgainAG: document.querySelector('input[name="eatAgainAG"]:checked').value, imageDataUrl: currentImageDataUrl };
                 reviews.push(newReview);
-                saveToLocalStorage();
-                
-                // Reset form
+                saveToLocalStorage(); // Save locally as a backup
                 reviewForm.reset();
                 currentImageDataUrl = null;
                 imagePreview.src = '';
                 imagePreview.classList.add('hidden');
                 fileName.textContent = 'No file chosen';
-                
-                showToast('Review added successfully!');
+                showToast('Review added. Save to GitHub to persist.');
                 switchTab('read');
             };
-            
             const deleteReview = (index) => {
                 reviews.splice(index, 1);
                 saveToLocalStorage();
                 renderReviews();
-                showToast('Review deleted.');
+                showToast('Review deleted. Save to GitHub to persist.');
             };
 
-            // --- Data Persistence ---
+            // --- GitHub & Data Persistence ---
             const saveToLocalStorage = () => localStorage.setItem('foodReviews', JSON.stringify(reviews));
-            const saveToFile = () => {
-                if (reviews.length === 0) {
-                    showToast('No reviews to save.', 'error'); return;
+
+            const loadReviewsFromUrl = async () => {
+                try {
+                    const response = await fetch(getRawUrl(REVIEWS_FILE_PATH) + `?t=${new Date().getTime()}`); // Cache-bust
+                    if (!response.ok) { // File might not exist yet
+                        if (response.status === 404) {
+                            showToast('reviews.json not found on GitHub. Add a review and save it to create the file.', 'error');
+                            reviews = [];
+                            return;
+                        }
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    if (Array.isArray(data)) {
+                        reviews = data;
+                        saveToLocalStorage();
+                        showToast('Reviews loaded from GitHub!');
+                    }
+                } catch (error) {
+                    console.error("Could not load reviews from GitHub:", error);
+                    showToast('Could not load from GitHub. Using local backup.', 'error');
+                    const storedReviews = localStorage.getItem('foodReviews');
+                    if (storedReviews) reviews = JSON.parse(storedReviews);
                 }
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(reviews, null, 2));
-                const dl = document.createElement('a');
-                dl.setAttribute("href", dataStr);
-                dl.setAttribute("download", "food_reviews.json");
-                dl.click();
-                dl.remove();
-                showToast('Reviews saved to food_reviews.json');
-            };
-            const loadFromFile = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const loadedReviews = JSON.parse(e.target.result);
-                        if (Array.isArray(loadedReviews)) {
-                           reviews = loadedReviews;
-                           saveToLocalStorage();
-                           renderReviews();
-                           showToast('Reviews loaded successfully!');
-                           switchTab('read');
-                        } else { throw new Error("Invalid format"); }
-                    } catch (error) { showToast('Could not load file. Invalid JSON format.', 'error'); }
-                };
-                reader.readAsText(file);
-                fileInput.value = '';
             };
             
-            // --- UI Helpers ---
+            const saveReviewsToGithub = async (decryptedPat) => {
+                try {
+                    showToast('Saving to GitHub...');
+                    // 1. Get the current file SHA
+                    let currentSha;
+                    const getFileResponse = await fetch(getApiUrl(REVIEWS_FILE_PATH), {
+                        headers: { 'Authorization': `token ${decryptedPat}` }
+                    });
+                    if (getFileResponse.ok) {
+                        const fileData = await getFileResponse.json();
+                        currentSha = fileData.sha;
+                    } else if (getFileResponse.status !== 404) {
+                        throw new Error('Could not fetch current file SHA.');
+                    }
+
+                    // 2. Prepare the new content
+                    const contentToSave = JSON.stringify(reviews, null, 2);
+                    const encodedContent = btoa(unescape(encodeURIComponent(contentToSave))); // Handles UTF-8 chars
+
+                    // 3. Send the update request
+                    const response = await fetch(getApiUrl(REVIEWS_FILE_PATH), {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${decryptedPat}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: `Update reviews ${new Date().toISOString()}`,
+                            content: encodedContent,
+                            sha: currentSha // Include sha if updating an existing file
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`GitHub API error: ${errorData.message}`);
+                    }
+
+                    showToast('Successfully saved to GitHub!', 'success');
+                    saveToLocalStorage(); // Also update local backup
+
+                } catch (error) {
+                    console.error('Failed to save to GitHub:', error);
+                    showToast(`Error: ${error.message}`, 'error');
+                }
+            };
+
+            // --- UI Helpers & Event Listeners ---
             let toastTimer;
             const showToast = (message, type = 'success') => {
                 clearTimeout(toastTimer);
@@ -386,20 +498,71 @@
                 toast.className = `fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transform transition-all duration-300 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'} translate-y-0 opacity-100`;
                 toastTimer = setTimeout(() => {
                     toast.className = toast.className.replace('translate-y-0 opacity-100', 'translate-y-20 opacity-0');
-                }, 3000);
-            }
+                }, 4000);
+            };
 
-            // --- Event Listeners ---
-            addTab.addEventListener('click', () => switchTab('add'));
-            readTab.addEventListener('click', () => switchTab('read'));
+            // Setup Tab Listeners
+            encryptBtn.addEventListener('click', async () => {
+                const pat = patInput.value;
+                const password = passwordInput.value;
+                if (!pat || !password) {
+                    showToast('Please provide both a PAT and a password.', 'error');
+                    return;
+                }
+                try {
+                    const encryptedData = await cryptoUtils.encrypt(pat, password);
+                    encryptedOutput.value = JSON.stringify({ data: encryptedData }, null, 2);
+                    encryptedOutputContainer.classList.remove('hidden');
+                    showToast('Encryption successful! Copy the text below.', 'success');
+                } catch (e) {
+                    showToast('Encryption failed.', 'error');
+                    console.error(e);
+                }
+            });
+
+            // Modal Listeners
+            saveToGithubBtn.addEventListener('click', () => {
+                passwordModal.classList.remove('hidden');
+                modalPasswordInput.focus();
+            });
+            cancelModalBtn.addEventListener('click', () => passwordModal.classList.add('hidden'));
+            confirmModalBtn.addEventListener('click', async () => {
+                const password = modalPasswordInput.value;
+                if (!password) {
+                    showToast('Password is required.', 'error');
+                    return;
+                }
+                passwordModal.classList.add('hidden');
+                modalPasswordInput.value = '';
+
+                try {
+                    showToast('Decrypting token...');
+                    // 1. Fetch the encrypted PAT file from GitHub
+                    const response = await fetch(getRawUrl(ENCRYPTED_PAT_PATH) + `?t=${new Date().getTime()}`);
+                    if (!response.ok) throw new Error('Could not find pat.enc.json in the repo.');
+                    const encryptedJson = await response.json();
+                    
+                    // 2. Decrypt it
+                    const decryptedPat = await cryptoUtils.decrypt(encryptedJson.data, password);
+                    showToast('Decryption successful. Saving...', 'success');
+
+                    // 3. Save the reviews
+                    await saveReviewsToGithub(decryptedPat);
+
+                } catch (error) {
+                    showToast(`Error: ${error.message}`, 'error');
+                    console.error(error);
+                }
+            });
+
+            // Core Listeners
+            Object.keys(tabs).forEach(id => tabs[id].addEventListener('click', () => switchTab(id)));
             reviewForm.addEventListener('submit', addReview);
-            saveToFileBtn.addEventListener('click', saveToFile);
-            fileInput.addEventListener('change', loadFromFile);
             imageUpload.addEventListener('change', handleImageUpload);
             reviewsList.addEventListener('click', (e) => {
                 if (e.target.classList.contains('delete-btn')) {
                     const index = e.target.dataset.index;
-                    if(window.confirm('Are you sure you want to delete this review?')) {
+                    if (window.confirm('Are you sure you want to delete this review?')) {
                         deleteReview(index);
                     }
                 }
