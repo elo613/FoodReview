@@ -26,12 +26,17 @@ document.addEventListener("DOMContentLoaded", () => {
     },
 
     // No changes to the functions below
-    async fetchReviews(){
-      const res = await fetch(`${this._getRawUrl(REVIEWS_FILE_PATH)}?t=${Date.now()}`);
-      if(res.status===404) return [];
-      if(!res.ok) throw new Error("Failed to fetch reviews.");
-      return await res.json();
-    },
+async fetchReviews(token){ // <--- Accepts the token
+  const res = await fetch(`${this._getApiUrl(REVIEWS_FILE_PATH)}?t=${Date.now()}`, {
+    headers: { // <--- Sends the token for authorization
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/vnd.github.v3.raw'
+    }
+  });
+  if(res.status===404) return [];
+  if(!res.ok) throw new Error("Failed to fetch reviews.");
+  return await res.json();
+},
 
     async saveReviews(reviews,token){
       const url = this._getApiUrl(REVIEWS_FILE_PATH);
