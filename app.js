@@ -8,34 +8,34 @@ document.addEventListener("DOMContentLoaded", () => {
   const ApiService = {
     _getApiUrl: path => `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(path)}`,
     _getRawUrl: path => `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${encodeURIComponent(path)}`,
-    _xorCipher: (str, key) => str.split('').map((c,i) => String.fromCharCode(c.charCodeAt(0) ^ key.charCodeAt(i % key.length))).join(''),
-    _decryptPat: (data,key) => ApiService._xorCipher(atob(data), key).trim(),
-    _isValidGitHubToken: token => token && typeof token === 'string' && ['ghp_','gho_','ghu_','ghs_','ghr_','github_pat_'].some(p => token.startsWith(p)) && token.length >= 40,
+    _xorCipher: (str,key)=>str.split('').map((c,i)=>String.fromCharCode(c.charCodeAt(0)^key.charCodeAt(i%key.length))).join(''),
+    _decryptPat: (data,key)=>ApiService._xorCipher(atob(data),key).trim(),
+    _isValidGitHubToken: token=>token && typeof token==='string' && ['ghp_','gho_','ghu_','ghs_','ghr_','github_pat_'].some(p=>token.startsWith(p)) && token.length>=40,
 
     async getPat(password){
       const res = await fetch(`${this._getRawUrl(PAT_FILE)}?t=${Date.now()}`);
       if(!res.ok) throw new Error("Could not fetch PAT file.");
       const {data} = await res.json();
-      const token = this._decryptPat(data, password);
+      const token = this._decryptPat(data,password);
       if(!this._isValidGitHubToken(token)) throw new Error("Incorrect password or token decryption failed.");
       return token;
     },
 
     async fetchReviews(){
       const res = await fetch(`${this._getRawUrl(REVIEWS_FILE_PATH)}?t=${Date.now()}`);
-      if(res.status === 404) return [];
+      if(res.status===404) return [];
       if(!res.ok) throw new Error("Failed to fetch reviews.");
       return await res.json();
     },
 
-    async saveReviews(reviews, token){
+    async saveReviews(reviews,token){
       const url = this._getApiUrl(REVIEWS_FILE_PATH);
       let sha = null;
 
-      const metaRes = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github.v3+json'
+      const metaRes = await fetch(url,{
+        headers:{
+          'Authorization':`Bearer ${token}`,
+          'Accept':'application/vnd.github.v3+json'
         }
       });
 
@@ -44,24 +44,56 @@ document.addEventListener("DOMContentLoaded", () => {
         sha = meta.sha;
       }
 
-      const jsonContent = JSON.stringify(reviews, null, 2);
-      const base64Content = btoa(new TextEncoder().encode(jsonContent).reduce((d,b)=>d + String.fromCharCode(b), ''));
+      const jsonContent = JSON.stringify(reviews,null,2);
+      const base64Content = btoa(new TextEncoder().encode(jsonContent).reduce((d,b)=>d+String.fromCharCode(b),''));
 
-      const body = { message: `Update reviews ${new Date().toISOString()}`, content: base64Content };
+      const body = { message:`Update reviews ${new Date().toISOString()}`, content:base64Content };
       if(sha) body.sha = sha;
 
-      const res = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
+      const res = await fetch(url,{
+        method:'PUT',
+        headers:{
+          'Authorization':`Bearer ${token}`,
+          'Accept':'application/vnd.github.v3+json',
+          'Content-Type':'application/json'
         },
-        body: JSON.stringify(body)
+        body:JSON.stringify(body)
       });
 
       if(!res.ok) throw new Error(`Failed to save reviews: ${res.status}`);
       return await res.json();
+    },
+
+    async uploadImage(file,token){
+      const sanitized = file.name.replace(/[^a-zA-Z0-9.-]/g,'_');
+      const timestamp = Date.now();
+      const fileName = `images/${timestamp}_${sanitized}`;
+      const url = this._getApiUrl(fileName);
+
+      const base64Content = await new Promise((resolve,reject)=>{
+        const reader = new FileReader();
+        reader.onload = ()=>resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const body = {
+        message:`Upload image ${file.name}`,
+        content:base64Content
+      };
+
+      const res = await fetch(url,{
+        method:'PUT',
+        headers:{
+          'Authorization':`Bearer ${token}`,
+          'Accept':'application/vnd.github.v3+json'
+        },
+        body:JSON.stringify(body)
+      });
+
+      if(!res.ok) throw new Error(`Image upload failed: ${res.status}`);
+      const data = await res.json();
+      return data.content.download_url;
     }
   };
 
@@ -91,14 +123,14 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(()=>this.toast.classList.add("opacity-0","translate-y-4"),3000);
     },
 
-    updateView({token, activeTab, isBusy}){
-      this.app.classList.toggle('hidden', !token);
-      this.loginScreen.classList.toggle('hidden', !!token);
-      const isAdd = activeTab === 'add';
-      this.addTab.classList.toggle('tab-active', isAdd);
-      this.readTab.classList.toggle('tab-active', !isAdd);
-      this.addReviewContent.classList.toggle('hidden', !isAdd);
-      this.readReviewsContent.classList.toggle('hidden', isAdd);
+    updateView({token,activeTab,isBusy}){
+      this.app.classList.toggle('hidden',!token);
+      this.loginScreen.classList.toggle('hidden',!!token);
+      const isAdd = activeTab==='add';
+      this.addTab.classList.toggle('tab-active',isAdd);
+      this.readTab.classList.toggle('tab-active',!isAdd);
+      this.addReviewContent.classList.toggle('hidden',!isAdd);
+      this.readReviewsContent.classList.toggle('hidden',isAdd);
       this.reviewForm.querySelector('button').disabled = isBusy;
     },
 
@@ -143,12 +175,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const select = document.getElementById(id);
         select.innerHTML = Array.from({length:10},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
       });
+      ['EL','AG'].forEach(id=>{
+        const select = document.getElementById(id);
+        select.innerHTML = `<option value="Yes">Yes</option><option value="No">No</option>`;
+      });
     }
   };
 
   // --- AppController ---
   const AppController = {
-    state: {token:sessionStorage.getItem('github_pat')||null, reviews:[], activeTab:'read', isBusy:false},
+    state:{token:sessionStorage.getItem('github_pat')||null,reviews:[],activeTab:'read',isBusy:false},
 
     setState(s){
       Object.assign(this.state,s);
@@ -166,7 +202,10 @@ document.addEventListener("DOMContentLoaded", () => {
       UIManager.populateRatingSelectors();
 
       if(this.state.token && ApiService._isValidGitHubToken(this.state.token)){
-        await this.withLoading(async()=>{const reviews = await ApiService.fetchReviews(); this.setState({reviews});});
+        await this.withLoading(async()=>{
+          const reviews = await ApiService.fetchReviews();
+          this.setState({reviews});
+        });
       } else {
         this.setState({token:null});
       }
@@ -175,7 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
     },
 
     bindEvents(){
-      UIManager.loginForm.addEventListener("submit", e=>{
+      UIManager.loginForm.addEventListener("submit",e=>{
         e.preventDefault();
         UIManager.loginLoading.classList.remove("hidden");
         UIManager.loginError.classList.add("hidden");
@@ -183,9 +222,9 @@ document.addEventListener("DOMContentLoaded", () => {
         (async()=>{
           try{
             const token = await ApiService.getPat(UIManager.loginPassword.value);
-            sessionStorage.setItem('github_pat', token);
+            sessionStorage.setItem('github_pat',token);
             const reviews = await ApiService.fetchReviews();
-            this.setState({token, reviews, activeTab:'read'});
+            this.setState({token,reviews,activeTab:'read'});
           }catch(err){
             UIManager.loginError.textContent = err.message;
             UIManager.loginError.classList.remove("hidden");
@@ -195,37 +234,33 @@ document.addEventListener("DOMContentLoaded", () => {
         })();
       });
 
-      UIManager.logoutBtn.addEventListener("click", ()=>{
+      UIManager.logoutBtn.addEventListener("click",()=>{
         sessionStorage.removeItem('github_pat');
-        this.setState({token:null, reviews:[]});
+        this.setState({token:null,reviews:[]});
       });
 
-      UIManager.reviewForm.addEventListener("submit", e=>{
+      UIManager.reviewForm.addEventListener("submit",e=>{
         e.preventDefault();
         this.withLoading(async()=>{
           const form = e.target;
           const newReview = Object.fromEntries(new FormData(form));
           newReview.price = parseFloat(newReview.price).toFixed(2);
           newReview.timestamp = new Date().toISOString();
-          newReview.image = '';
 
-          // Image preview (optional)
+          // Upload image to GitHub if present
           const file = UIManager.imageUpload.files[0];
-          if(file){
-            const reader = new FileReader();
-            reader.onload = () => { newReview.image = reader.result; };
-            reader.readAsDataURL(file);
-          }
+          if(file) newReview.image = await ApiService.uploadImage(file,this.state.token);
+          else newReview.image = '';
 
           const updated = [...this.state.reviews,newReview];
           await ApiService.saveReviews(updated,this.state.token);
-          this.setState({reviews:updated, activeTab:'read'});
+          this.setState({reviews:updated,activeTab:'read'});
           UIManager.resetForm();
           UIManager.showToast("Review added successfully!");
         });
       });
 
-      UIManager.reviewsList.addEventListener('click', e=>{
+      UIManager.reviewsList.addEventListener('click',e=>{
         if(e.target.dataset.action!=='delete' || !confirm("Delete this review?")) return;
         this.withLoading(async()=>{
           const index = parseInt(e.target.closest('[data-index]').dataset.index,10);
@@ -236,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       });
 
-      UIManager.imageUpload.addEventListener("change", e=>{
+      UIManager.imageUpload.addEventListener("change",e=>{
         const file = e.target.files[0];
         if(file){
           const reader = new FileReader();
@@ -247,8 +282,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
-      UIManager.addTab.addEventListener("click", ()=>this.setState({activeTab:'add'}));
-      UIManager.readTab.addEventListener("click", ()=>this.setState({activeTab:'read'}));
+      UIManager.addTab.addEventListener("click",()=>this.setState({activeTab:'add'}));
+      UIManager.readTab.addEventListener("click",()=>this.setState({activeTab:'read'}));
     }
   };
 
