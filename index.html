@@ -277,14 +277,32 @@
 
                 try {
                     // Fetch and decrypt the PAT
-                    const response = await fetch(getRawUrl(ENCRYPTED_PAT_PATH) + `?t=${new Date().getTime()}`);
-                    if (response.status === 404) {
-                        throw new Error('Setup not complete: pat.enc.json not found in the repo.');
-                    }
-                    if (!response.ok) throw new Error('Could not fetch the encrypted PAT file.');
+                    const patUrl = getRawUrl(ENCRYPTED_PAT_PATH) + `?t=${new Date().getTime()}`;
+                    console.log('Fetching PAT from:', patUrl);
                     
-                    const encryptedJson = await response.json();
-                    decryptedPat = await cryptoUtils.decrypt(encryptedJson.data, password);
+                    const response = await fetch(patUrl);
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', [...response.headers.entries()]);
+                    
+                    if (response.status === 404) {
+                        // Try alternative URL format
+                        const altUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${ENCRYPTED_PAT_PATH}`;
+                        console.log('Trying API URL:', altUrl);
+                        const altResponse = await fetch(altUrl);
+                        if (altResponse.ok) {
+                            const fileData = await altResponse.json();
+                            const encryptedJson = JSON.parse(atob(fileData.content));
+                            decryptedPat = await cryptoUtils.decrypt(encryptedJson.data, password);
+                        } else {
+                            throw new Error('Setup not complete: pat.enc.json not found in the repo.');
+                        }
+                    } else if (!response.ok) {
+                        throw new Error(`Could not fetch the encrypted PAT file. Status: ${response.status}`);
+                    } else {
+                        const encryptedJson = await response.json();
+                        console.log('Got encrypted data');
+                        decryptedPat = await cryptoUtils.decrypt(encryptedJson.data, password);
+                    }
 
                     // Load reviews
                     await loadReviewsFromGitHub();
