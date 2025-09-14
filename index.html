@@ -1,626 +1,466 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Food Review Manager</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .tab-active {
-            border-bottom-color: #3b82f6; /* blue-500 */
-            color: #3b82f6;
-        }
-        .tab {
-            border-bottom-color: transparent;
-        }
-        .tab-content, .modal {
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        /* Hide the default file input */
-        input[type="file"] {
-            display: none;
-        }
-        .modal-overlay {
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        .password-overlay {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Review Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .tab-active { border-bottom-color: #3b82f6; color: #3b82f6; }
+    .tab { border-bottom-color: transparent; }
+    .tab-content, .modal { animation: fadeIn 0.5s ease-in-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    input[type="file"] { display: none; }
+    .modal-overlay { animation: fadeIn 0.3s ease-in-out; }
+  </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <!-- Login Screen -->
-    <div id="loginScreen" class="fixed inset-0 login-form flex items-center justify-center">
-        <div class="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full mx-4">
-            <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">Food Review Manager</h1>
-                <p class="text-gray-600">Enter your password to access your reviews</p>
-            </div>
-            <form id="loginForm" class="space-y-6">
-                <div>
-                    <label for="loginPassword" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                    <input type="password" id="loginPassword" required 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-lg">
-                </div>
-                <button type="submit" 
-                        class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200">
-                    Access Reviews
-                </button>
-            </form>
-            <div id="loginError" class="mt-4 text-red-600 text-sm text-center hidden"></div>
-            <div id="loginLoading" class="mt-4 text-blue-600 text-sm text-center hidden">
-                <div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                Loading...
-            </div>
+  <!-- Login Screen -->
+  <div id="loginScreen" class="fixed inset-0 flex items-center justify-center">
+    <div class="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full mx-4">
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Food Review Manager</h1>
+        <p class="text-gray-600">Enter your password to access your reviews</p>
+      </div>
+      <form id="loginForm" class="space-y-6">
+        <div>
+          <label for="loginPassword" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+          <input type="password" id="loginPassword" required 
+            class="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-lg">
         </div>
+        <button type="submit" 
+          class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200">
+          Access Reviews
+        </button>
+      </form>
+      <div id="loginError" class="mt-4 text-red-600 text-sm text-center hidden"></div>
+      <div id="loginLoading" class="mt-4 text-blue-600 text-sm text-center hidden">
+        <div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+        Loading...
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 hidden">
+    <header class="text-center mb-8">
+      <div class="flex justify-between items-center">
+        <div class="flex-1">
+          <h1 class="text-4xl font-bold text-gray-900">Food Review Manager</h1>
+          <p class="text-gray-600 mt-2">Your personal journal for every meal.</p>
+        </div>
+        <button id="logoutBtn" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50">
+          Logout
+        </button>
+      </div>
+    </header>
+
+    <div class="mb-6 border-b border-gray-200">
+      <nav class="flex -mb-px space-x-6" aria-label="Tabs">
+        <button id="addTab" class="tab tab-active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm focus:outline-none">
+          Add Review
+        </button>
+        <button id="readTab" class="tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none">
+          Read Reviews
+        </button>
+      </nav>
     </div>
 
-    <!-- Main App -->
-    <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 hidden">
-        <header class="text-center mb-8">
-            <div class="flex justify-between items-center">
-                <div class="flex-1">
-                    <h1 class="text-4xl font-bold text-gray-900">Food Review Manager</h1>
-                    <p class="text-gray-600 mt-2">Your personal journal for every meal.</p>
-                </div>
-                <button id="logoutBtn" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50">
-                    Logout
-                </button>
+    <main>
+      <!-- Add Review -->
+      <div id="addReviewContent" class="tab-content bg-white p-6 rounded-lg shadow-md">
+        <form id="reviewForm" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="restaurant" class="block text-sm font-medium text-gray-700">Restaurant</label>
+              <input type="text" id="restaurant" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
             </div>
-        </header>
+            <div>
+              <label for="foodItem" class="block text-sm font-medium text-gray-700">Food Item</label>
+              <input type="text" id="foodItem" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+            </div>
+          </div>
+          <div>
+            <label for="price" class="block text-sm font-medium text-gray-700">Price (£)</label>
+            <input type="number" id="price" step="0.01" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Photo</label>
+            <div class="mt-1 flex items-center gap-4">
+              <label for="imageUpload" class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Choose Image</label>
+              <input type="file" id="imageUpload" accept="image/*" capture="environment">
+              <p id="fileName" class="text-sm text-gray-500">No file chosen</p>
+            </div>
+            <div class="mt-4">
+              <img id="imagePreview" src="" alt="Image Preview" class="hidden max-h-60 rounded-lg shadow-sm"/>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div>
+              <label for="taste" class="block text-sm font-medium text-gray-700">Taste (1-10)</label>
+              <select id="taste" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select>
+            </div>
+            <div>
+              <label for="texture" class="block text-sm font-medium text-gray-700">Texture (1-10)</label>
+              <select id="texture" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select>
+            </div>
+            <div>
+              <label for="size" class="block text-sm font-medium text-gray-700">Size (1-10)</label>
+              <select id="size" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select>
+            </div>
+            <div>
+              <label for="value" class="block text-sm font-medium text-gray-700">Value (1-10)</label>
+              <select id="value" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <fieldset>
+              <legend class="text-sm font-medium text-gray-700">Would eat here again? (EL)</legend>
+              <div class="mt-2 space-x-4">
+                <label class="inline-flex items-center"><input type="radio" name="eatAgainEL" value="Yes" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"><span class="ml-2">Yes</span></label>
+                <label class="inline-flex items-center"><input type="radio" name="eatAgainEL" value="No" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" checked><span class="ml-2">No</span></label>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="text-sm font-medium text-gray-700">Would eat here again? (AG)</legend>
+              <div class="mt-2 space-x-4">
+                <label class="inline-flex items-center"><input type="radio" name="eatAgainAG" value="Yes" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"><span class="ml-2">Yes</span></label>
+                <label class="inline-flex items-center"><input type="radio" name="eatAgainAG" value="No" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" checked><span class="ml-2">No</span></label>
+              </div>
+            </fieldset>
+          </div>
+          <div class="flex justify-end">
+            <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              Add Review
+            </button>
+          </div>
+        </form>
+      </div>
 
-        <div class="mb-6 border-b border-gray-200">
-            <nav class="flex -mb-px space-x-6" aria-label="Tabs">
-                <button id="addTab" class="tab tab-active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm focus:outline-none">
-                    Add Review
-                </button>
-                <button id="readTab" class="tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none">
-                    Read Reviews
-                </button>
-            </nav>
+      <!-- Read Reviews -->
+      <div id="readReviewsContent" class="tab-content hidden">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <h2 class="text-2xl font-semibold text-gray-800">Your Reviews</h2>
+            <div class="flex items-center gap-2">
+              <button id="saveToGithubBtn" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                Save to GitHub
+              </button>
+            </div>
+          </div>
+          <div id="reviewsList" class="space-y-6">
+            <p class="text-gray-500 text-center py-8">Loading reviews...</p>
+          </div>
         </div>
-
-        <main>
-            <div id="addReviewContent" class="tab-content bg-white p-6 rounded-lg shadow-md">
-                <form id="reviewForm" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="restaurant" class="block text-sm font-medium text-gray-700">Restaurant</label>
-                            <input type="text" id="restaurant" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                        </div>
-                        <div>
-                            <label for="foodItem" class="block text-sm font-medium text-gray-700">Food Item</label>
-                            <input type="text" id="foodItem" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                        </div>
-                    </div>
-                    <div>
-                        <label for="price" class="block text-sm font-medium text-gray-700">Price (£)</label>
-                        <input type="number" id="price" step="0.01" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Photo</label>
-                        <div class="mt-1 flex items-center gap-4">
-                            <label for="imageUpload" class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Choose Image</label>
-                            <input type="file" id="imageUpload" accept="image/*" capture="environment">
-                            <p id="fileName" class="text-sm text-gray-500">No file chosen</p>
-                        </div>
-                        <div class="mt-4">
-                            <img id="imagePreview" src="" alt="Image Preview" class="hidden max-h-60 rounded-lg shadow-sm"/>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        <div>
-                            <label for="taste" class="block text-sm font-medium text-gray-700">Taste (1-10)</label>
-                            <select id="taste" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select>
-                        </div>
-                        <div>
-                            <label for="texture" class="block text-sm font-medium text-gray-700">Texture (1-10)</label>
-                            <select id="texture" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select>
-                        </div>
-                        <div>
-                            <label for="size" class="block text-sm font-medium text-gray-700">Size (1-10)</label>
-                            <select id="size" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select>
-                        </div>
-                        <div>
-                            <label for="value" class="block text-sm font-medium text-gray-700">Value (1-10)</label>
-                            <select id="value" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <fieldset>
-                            <legend class="text-sm font-medium text-gray-700">Would eat here again? (EL)</legend>
-                            <div class="mt-2 space-x-4">
-                                <label class="inline-flex items-center"><input type="radio" name="eatAgainEL" value="Yes" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"><span class="ml-2">Yes</span></label>
-                                <label class="inline-flex items-center"><input type="radio" name="eatAgainEL" value="No" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" checked><span class="ml-2">No</span></label>
-                            </div>
-                        </fieldset>
-                        <fieldset>
-                            <legend class="text-sm font-medium text-gray-700">Would eat here again? (AG)</legend>
-                            <div class="mt-2 space-x-4">
-                                <label class="inline-flex items-center"><input type="radio" name="eatAgainAG" value="Yes" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"><span class="ml-2">Yes</span></label>
-                                <label class="inline-flex items-center"><input type="radio" name="eatAgainAG" value="No" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" checked><span class="ml-2">No</span></label>
-                            </div>
-                        </fieldset>
-                    </div>
-                    <div class="flex justify-end">
-                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            Add Review
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <div id="readReviewsContent" class="tab-content hidden">
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                        <h2 class="text-2xl font-semibold text-gray-800">Your Reviews</h2>
-                        <div class="flex items-center gap-2">
-                            <button id="saveToGithubBtn" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
-                                Save to GitHub
-                            </button>
-                        </div>
-                    </div>
-                    <div id="reviewsList" class="space-y-6">
-                        <p class="text-gray-500 text-center py-8">Loading reviews...</p>
-                    </div>
-                </div>
-            </div>
-
-        </main>
-        
-        <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300">
-            <p id="toastMessage"></p>
-        </div>
-
+      </div>
+    </main>
+    
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300">
+      <p id="toastMessage"></p>
     </div>
+  </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- GitHub Configuration ---
-            const GITHUB_OWNER = 'elo613';
-            const GITHUB_REPO = 'FoodReviews';
-            const REVIEWS_FILE_PATH = 'reviews.json';
-            const ENCRYPTED_PAT_PATH = 'pat.enc.json';
-            const IMAGES_FOLDER = 'images';
-            
-            const getApiUrl = (path) => `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`;
-            const getRawUrl = (path) => `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${path}`;
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // --- GitHub Configuration ---
+    const GITHUB_OWNER = 'elo613';
+    const GITHUB_REPO = 'FoodReviews';
+    const REVIEWS_FILE_PATH = 'reviews.json';
+    const ENCRYPTED_PAT_PATH = 'pat.enc.json';
+    const IMAGES_FOLDER = 'images';
+    
+    const getApiUrl = (path) => `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`;
+    const getRawUrl = (path) => `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${path}`;
 
-            // --- DOM Elements ---
-            const loginScreen = document.getElementById('loginScreen');
-            const loginForm = document.getElementById('loginForm');
-            const loginPassword = document.getElementById('loginPassword');
-            const loginError = document.getElementById('loginError');
-            const loginLoading = document.getElementById('loginLoading');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const app = document.getElementById('app');
-            
-            const tabs = { add: addTab, read: readTab };
-            const contents = { add: addReviewContent, read: readReviewsContent };
-            const reviewForm = document.getElementById('reviewForm');
-            const reviewsList = document.getElementById('reviewsList');
-            const saveToGithubBtn = document.getElementById('saveToGithubBtn');
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toastMessage');
-            const imageUpload = document.getElementById('imageUpload');
-            const imagePreview = document.getElementById('imagePreview');
-            const fileName = document.getElementById('fileName');
+    // --- DOM Elements ---
+    const loginScreen = document.getElementById('loginScreen');
+    const loginForm = document.getElementById('loginForm');
+    const loginPassword = document.getElementById('loginPassword');
+    const loginError = document.getElementById('loginError');
+    const loginLoading = document.getElementById('loginLoading');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const app = document.getElementById('app');
 
-            // --- App State ---
-            let reviews = [];
-            let currentImageDataUrl = null;
-            let decryptedPat = null;
+    const addTab = document.getElementById('addTab');
+    const readTab = document.getElementById('readTab');
+    const addReviewContent = document.getElementById('addReviewContent');
+    const readReviewsContent = document.getElementById('readReviewsContent');
 
-            // --- Crypto Functions ---
-            const cryptoUtils = {
-                // Derives a key from a password and salt using PBKDF2
-                async getKey(password, salt) {
-                    const enc = new TextEncoder();
-                    const keyMaterial = await window.crypto.subtle.importKey(
-                        'raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']
-                    );
-                    return window.crypto.subtle.deriveKey(
-                        { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
-                        keyMaterial,
-                        { name: 'AES-GCM', length: 256 },
-                        true,
-                        ['encrypt', 'decrypt']
-                    );
-                },
-                // Decrypts base64 data using the derived key
-                async decrypt(base64Data, password) {
-                    // Convert base64 back to buffer
-                    const buffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-                    // Extract salt, iv, and content from the buffer
-                    const salt = buffer.slice(0, 16);
-                    const iv = buffer.slice(16, 28);
-                    const data = buffer.slice(28);
-                    const key = await this.getKey(password, salt);
-                    const decryptedContent = await window.crypto.subtle.decrypt(
-                        { name: 'AES-GCM', iv }, key, data
-                    );
-                    const dec = new TextDecoder();
-                    return dec.decode(decryptedContent);
-                }
-            };
+    const tabs = { add: addTab, read: readTab };
+    const contents = { add: addReviewContent, read: readReviewsContent };
 
-            // --- Login Handling ---
-            const showError = (message) => {
-                loginError.textContent = message;
-                loginError.classList.remove('hidden');
-            };
+    const reviewForm = document.getElementById('reviewForm');
+    const reviewsList = document.getElementById('reviewsList');
+    const saveToGithubBtn = document.getElementById('saveToGithubBtn');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    const imageUpload = document.getElementById('imageUpload');
+    const imagePreview = document.getElementById('imagePreview');
+    const fileName = document.getElementById('fileName');
 
-            const hideError = () => {
-                loginError.classList.add('hidden');
-            };
+    const restaurantInput = document.getElementById('restaurant');
+    const foodItemInput = document.getElementById('foodItem');
+    const priceInput = document.getElementById('price');
+    const tasteSelect = document.getElementById('taste');
+    const textureSelect = document.getElementById('texture');
+    const sizeSelect = document.getElementById('size');
+    const valueSelect = document.getElementById('value');
 
-            const showLoading = (show) => {
-                loginLoading.classList.toggle('hidden', !show);
-            };
+    // --- App State ---
+    let reviews = [];
+    let currentImageDataUrl = null;
+    let decryptedPat = null;
 
-            const handleLogin = async (e) => {
-                e.preventDefault();
-                const password = loginPassword.value;
-                if (!password) return;
+    // --- Crypto Functions ---
+    const cryptoUtils = {
+      async getKey(password, salt) {
+        const enc = new TextEncoder();
+        const keyMaterial = await window.crypto.subtle.importKey(
+          'raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']
+        );
+        return window.crypto.subtle.deriveKey(
+          { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+          keyMaterial,
+          { name: 'AES-GCM', length: 256 },
+          true,
+          ['encrypt', 'decrypt']
+        );
+      },
+      async decrypt(base64Data, password) {
+        const buffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+        const salt = buffer.slice(0, 16);
+        const iv = buffer.slice(16, 28);
+        const data = buffer.slice(28);
+        const key = await this.getKey(password, salt);
+        const decryptedContent = await window.crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv }, key, data
+        );
+        return new TextDecoder().decode(decryptedContent);
+      }
+    };
 
-                hideError();
-                showLoading(true);
+    // --- Login Handling ---
+    const showError = (message) => {
+      loginError.textContent = message;
+      loginError.classList.remove('hidden');
+    };
+    const hideError = () => loginError.classList.add('hidden');
+    const showLoading = (show) => loginLoading.classList.toggle('hidden', !show);
 
-                try {
-                    // Fetch and decrypt the PAT
-                    const patUrl = getRawUrl(ENCRYPTED_PAT_PATH) + `?t=${new Date().getTime()}`;
-                    console.log('Fetching PAT from:', patUrl);
-                    
-                    const response = await fetch(patUrl);
-                    console.log('Response status:', response.status);
-                    console.log('Response headers:', [...response.headers.entries()]);
-                    
-                    if (response.status === 404) {
-                        // Try alternative URL format
-                        const altUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${ENCRYPTED_PAT_PATH}`;
-                        console.log('Trying API URL:', altUrl);
-                        const altResponse = await fetch(altUrl);
-                        if (altResponse.ok) {
-                            const fileData = await altResponse.json();
-                            const encryptedJson = JSON.parse(atob(fileData.content));
-                            decryptedPat = await cryptoUtils.decrypt(encryptedJson.data, password);
-                        } else {
-                            throw new Error('Setup not complete: pat.enc.json not found in the repo.');
-                        }
-                    } else if (!response.ok) {
-                        throw new Error(`Could not fetch the encrypted PAT file. Status: ${response.status}`);
-                    } else {
-                        const encryptedJson = await response.json();
-                        console.log('Got encrypted data');
-                        decryptedPat = await cryptoUtils.decrypt(encryptedJson.data, password);
-                    }
+    const handleLogin = async (e) => {
+      e.preventDefault();
+      const password = loginPassword.value;
+      if (!password) return;
+      hideError(); showLoading(true);
 
-                    // Load reviews
-                    await loadReviewsFromGitHub();
-                    
-                    // Show main app
-                    loginScreen.classList.add('hidden');
-                    app.classList.remove('hidden');
-                    
-                    showToast('Successfully logged in!');
+      try {
+        const patUrl = getRawUrl(ENCRYPTED_PAT_PATH) + `?t=${Date.now()}`;
+        const response = await fetch(patUrl);
 
-                } catch (error) {
-                    console.error('Login error:', error);
-                    if (error.message.includes('decrypt') || error.message.includes('operation failed')) {
-                        showError('Invalid password. Please try again.');
-                    } else {
-                        showError(error.message);
-                    }
-                } finally {
-                    showLoading(false);
-                }
-            };
+        if (!response.ok) throw new Error(`Could not fetch PAT file (${response.status})`);
+        const encryptedJson = await response.json();
+        if (!encryptedJson.data) throw new Error("Invalid PAT format");
+        decryptedPat = await cryptoUtils.decrypt(encryptedJson.data, password);
 
-            const handleLogout = () => {
-                decryptedPat = null;
-                reviews = [];
-                loginPassword.value = '';
-                hideError();
-                app.classList.add('hidden');
-                loginScreen.classList.remove('hidden');
-            };
-            
-            // --- Initialization ---
-            const init = async () => {
-                ['taste', 'texture', 'size', 'value'].forEach(id => {
-                    const select = document.getElementById(id);
-                    for (let i = 1; i <= 10; i++) {
-                        const option = document.createElement('option');
-                        option.value = i;
-                        option.textContent = i;
-                        select.appendChild(option);
-                    }
-                });
-                renderReviews();
-            };
+        await loadReviewsFromGitHub();
+        loginScreen.classList.add('hidden');
+        app.classList.remove('hidden');
+        showToast('Successfully logged in!');
+      } catch (err) {
+        console.error('Login error:', err);
+        showError(err.message.includes('decrypt') ? 'Invalid password' : err.message);
+      } finally {
+        showLoading(false);
+      }
+    };
 
-            // --- Tab Management ---
-            const switchTab = (activeTabId) => {
-                Object.keys(tabs).forEach(id => {
-                    const tab = tabs[id];
-                    const content = contents[id];
-                    if (id === activeTabId) {
-                        tab.classList.add('tab-active');
-                        content.classList.remove('hidden');
-                    } else {
-                        tab.classList.remove('tab-active');
-                        content.classList.add('hidden');
-                    }
-                });
-                if (activeTabId === 'read') renderReviews();
-            };
+    const handleLogout = () => {
+      decryptedPat = null;
+      reviews = [];
+      loginPassword.value = '';
+      hideError();
+      app.classList.add('hidden');
+      loginScreen.classList.remove('hidden');
+    };
 
-            // --- Image Handling ---
-            const handleImageUpload = (event) => {
-                const file = event.target.files[0];
-                if (!file) {
-                    currentImageDataUrl = null;
-                    imagePreview.classList.add('hidden');
-                    fileName.textContent = 'No file chosen';
-                    return;
-                }
-                fileName.textContent = file.name;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800;
-                        const MAX_HEIGHT = 800;
-                        let { width, height } = img;
-                        if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                        } else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        currentImageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                        imagePreview.src = currentImageDataUrl;
-                        imagePreview.classList.remove('hidden');
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            };
+    // --- Init ---
+    const init = () => {
+      ['taste', 'texture', 'size', 'value'].forEach(id => {
+        const select = document.getElementById(id);
+        for (let i = 1; i <= 10; i++) {
+          const option = document.createElement('option');
+          option.value = i;
+          option.textContent = i;
+          select.appendChild(option);
+        }
+      });
+      renderReviews();
+    };
 
-            // --- Image Upload to GitHub ---
-            const uploadImageToGitHub = async (imageDataUrl, fileName) => {
-                try {
-                    // Remove data:image/jpeg;base64, prefix
-                    const base64Data = imageDataUrl.split(',')[1];
-                    const imagePath = `${IMAGES_FOLDER}/${fileName}`;
+    // --- Tabs ---
+    const switchTab = (activeId) => {
+      Object.keys(tabs).forEach(id => {
+        tabs[id].classList.toggle('tab-active', id === activeId);
+        contents[id].classList.toggle('hidden', id !== activeId);
+      });
+      if (activeId === 'read') renderReviews();
+    };
 
-                    const response = await fetch(getApiUrl(imagePath), {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `token ${decryptedPat}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            message: `Add image ${fileName}`,
-                            content: base64Data
-                        })
-                    });
+    // --- Image ---
+    const handleImageUpload = (e) => {
+      const file = e.target.files[0];
+      if (!file) { currentImageDataUrl = null; imagePreview.classList.add('hidden'); fileName.textContent = 'No file chosen'; return; }
+      fileName.textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX = 800; let { width, height } = img;
+          if (width > height && width > MAX) { height *= MAX / width; width = MAX; }
+          else if (height > MAX) { width *= MAX / height; height = MAX; }
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          currentImageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          imagePreview.src = currentImageDataUrl;
+          imagePreview.classList.remove('hidden');
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
 
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`GitHub API error: ${errorData.message}`);
-                    }
+    // --- Reviews ---
+    const addReview = (e) => {
+      e.preventDefault();
+      const newReview = {
+        restaurant: restaurantInput.value,
+        foodItem: foodItemInput.value,
+        price: parseFloat(priceInput.value).toFixed(2),
+        taste: tasteSelect.value,
+        texture: textureSelect.value,
+        size: sizeSelect.value,
+        value: valueSelect.value,
+        eatAgainEL: document.querySelector('input[name="eatAgainEL"]:checked').value,
+        eatAgainAG: document.querySelector('input[name="eatAgainAG"]:checked').value,
+        image: currentImageDataUrl,
+        timestamp: new Date().toISOString()
+      };
+      reviews.push(newReview);
+      renderReviews();
+      reviewForm.reset();
+      imagePreview.classList.add('hidden');
+      fileName.textContent = 'No file chosen';
+      currentImageDataUrl = null;
+      switchTab('read');
+      showToast('Review added!');
+    };
 
-                    return getRawUrl(imagePath);
-                } catch (error) {
-                    console.error('Failed to upload image:', error);
-                    throw error;
-                }
-            };
+    const renderReviews = () => {
+      reviewsList.innerHTML = '';
+      if (reviews.length === 0) {
+        reviewsList.innerHTML = '<p class="text-gray-500 text-center py-8">No reviews yet.</p>';
+        return;
+      }
+      [...reviews].reverse().forEach((r, idx) => {
+        const card = document.createElement('div');
+        card.className = 'bg-white p-6 rounded-lg shadow-md border border-gray-200';
+        card.innerHTML = `
+          <div class="flex justify-between items-start mb-4">
+            <h3 class="text-xl font-semibold text-gray-800">${r.foodItem}</h3>
+            <span class="text-gray-500 text-sm">${new Date(r.timestamp).toLocaleString()}</span>
+          </div>
+          <p class="text-gray-600 mb-2">Restaurant: ${r.restaurant}</p>
+          <p class="text-gray-600 mb-2">Price: £${r.price}</p>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <p><strong>Taste:</strong> ${r.taste}/10</p>
+            <p><strong>Texture:</strong> ${r.texture}/10</p>
+            <p><strong>Size:</strong> ${r.size}/10</p>
+            <p><strong>Value:</strong> ${r.value}/10</p>
+          </div>
+          <div class="flex gap-6 mb-4">
+            <p><strong>Eat Again (EL):</strong> ${r.eatAgainEL}</p>
+            <p><strong>Eat Again (AG):</strong> ${r.eatAgainAG}</p>
+          </div>
+          ${r.image ? `<img src="${r.image}" alt="Food photo" class="mt-4 max-h-60 rounded-lg shadow-sm"/>` : ''}
+          <div class="flex justify-end mt-4">
+            <button onclick="reviews.splice(${reviews.length - 1 - idx}, 1); renderReviews(); showToast('Review deleted');"
+              class="px-3 py-1 text-sm text-red-600 hover:text-red-800 border border-red-200 rounded-md hover:bg-red-50">
+              Delete
+            </button>
+          </div>`;
+        reviewsList.appendChild(card);
+      });
+    };
 
-            // --- Review Management ---
-            const renderReviews = () => {
-                reviewsList.innerHTML = '';
-                if (reviews.length === 0) {
-                    reviewsList.innerHTML = '<p class="text-gray-500 text-center py-8">No reviews yet. Add one to get started!</p>';
-                    return;
-                }
-                reviews.slice().reverse().forEach((review, index) => {
-                    const actualIndex = reviews.length - 1 - index;
-                    const reviewElement = document.createElement('div');
-                    reviewElement.className = 'p-4 border rounded-lg bg-gray-50 shadow-sm';
-                    
-                    // Use imageUrl if available, otherwise fall back to imageDataUrl for backwards compatibility
-                    const imageUrl = review.imageUrl || review.imageDataUrl;
-                    const imageHTML = imageUrl ? `<img src="${imageUrl}" alt="${review.foodItem}" class="mt-4 w-full h-auto max-h-80 object-cover rounded-md">` : '';
-                    
-                    reviewElement.innerHTML = `
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h3 class="text-xl font-bold text-blue-600">${review.restaurant}</h3>
-                                <p class="text-md text-gray-800">${review.foodItem}</p>
-                                <p class="text-sm text-gray-600">Price: £${review.price}</p>
-                            </div>
-                            <button data-index="${actualIndex}" class="delete-btn text-2xl font-bold text-gray-400 hover:text-red-500 focus:outline-none">&times;</button>
-                        </div>
-                        <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                            <div><span class="font-semibold">Taste:</span> ${review.taste}/10</div>
-                            <div><span class="font-semibold">Texture:</span> ${review.texture}/10</div>
-                            <div><span class="font-semibold">Size:</span> ${review.size}/10</div>
-                            <div><span class="font-semibold">Value:</span> ${review.value}/10</div>
-                        </div>
-                         <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
-                            <p><span class="font-semibold">Eat again? (EL):</span> ${review.eatAgainEL}</p>
-                            <p><span class="font-semibold">Eat again? (AG):</span> ${review.eatAgainAG}</p>
-                        </div>
-                        ${imageHTML}`;
-                    reviewsList.appendChild(reviewElement);
-                });
-            };
+    // --- GitHub Integration ---
+    const saveReviewsToGitHub = async () => {
+      if (!decryptedPat) { showToast('Not logged in', true); return; }
+      try {
+        const url = getApiUrl(REVIEWS_FILE_PATH);
+        const getResp = await fetch(url, { headers: { Authorization: `token ${decryptedPat}` }});
+        const sha = getResp.ok ? (await getResp.json()).sha : undefined;
 
-            const addReview = async (e) => {
-                e.preventDefault();
-                
-                const newReview = { 
-                    restaurant: restaurant.value, 
-                    foodItem: foodItem.value, 
-                    price: parseFloat(price.value).toFixed(2), 
-                    taste: taste.value, 
-                    texture: texture.value, 
-                    size: size.value, 
-                    value: value.value, 
-                    eatAgainEL: document.querySelector('input[name="eatAgainEL"]:checked').value, 
-                    eatAgainAG: document.querySelector('input[name="eatAgainAG"]:checked').value,
-                    timestamp: new Date().toISOString()
-                };
-
-                // Handle image upload if there's an image
-                if (currentImageDataUrl) {
-                    try {
-                        showToast('Uploading image...');
-                        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-                        const imageName = `${newReview.restaurant.replace(/\s+/g, '_')}_${newReview.foodItem.replace(/\s+/g, '_')}_${timestamp}.jpg`;
-                        const imageUrl = await uploadImageToGitHub(currentImageDataUrl, imageName);
-                        newReview.imageUrl = imageUrl;
-                    } catch (error) {
-                        showToast('Failed to upload image, but review will be saved without it', 'error');
-                        console.error('Image upload failed:', error);
-                    }
-                }
-
-                reviews.push(newReview);
-                
-                // Auto-save to GitHub
-                try {
-                    await saveReviewsToGithub();
-                } catch (error) {
-                    showToast('Review added locally but failed to save to GitHub', 'error');
-                }
-                
-                reviewForm.reset();
-                currentImageDataUrl = null;
-                imagePreview.src = '';
-                imagePreview.classList.add('hidden');
-                fileName.textContent = 'No file chosen';
-                switchTab('read');
-            };
-
-            const deleteReview = async (index) => {
-                reviews.splice(index, 1);
-                renderReviews();
-                
-                try {
-                    await saveReviewsToGithub();
-                } catch (error) {
-                    showToast('Review deleted locally but failed to save to GitHub', 'error');
-                }
-            };
-
-            // --- GitHub Data Management ---
-            const loadReviewsFromGitHub = async () => {
-                try {
-                    const response = await fetch(getRawUrl(REVIEWS_FILE_PATH) + `?t=${new Date().getTime()}`);
-                    if (!response.ok) {
-                        if (response.status === 404) {
-                            reviews = [];
-                            return;
-                        }
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    const data = await response.json();
-                    if (Array.isArray(data)) {
-                        reviews = data;
-                    }
-                } catch (error) {
-                    console.error("Could not load reviews from GitHub:", error);
-                    reviews = [];
-                }
-            };
-            
-            const saveReviewsToGithub = async () => {
-                try {
-                    showToast('Saving to GitHub...');
-                    
-                    // Get current file SHA
-                    let currentSha;
-                    const getFileResponse = await fetch(getApiUrl(REVIEWS_FILE_PATH), {
-                        headers: { 'Authorization': `token ${decryptedPat}` }
-                    });
-                    if (getFileResponse.ok) {
-                        const fileData = await getFileResponse.json();
-                        currentSha = fileData.sha;
-                    } else if (getFileResponse.status !== 404) {
-                        throw new Error('Could not fetch current file SHA.');
-                    }
-
-                    // Prepare and send update
-                    const contentToSave = JSON.stringify(reviews, null, 2);
-                    const encodedContent = btoa(unescape(encodeURIComponent(contentToSave)));
-
-                    const response = await fetch(getApiUrl(REVIEWS_FILE_PATH), {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `token ${decryptedPat}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            message: `Update reviews ${new Date().toISOString()}`,
-                            content: encodedContent,
-                            sha: currentSha
-                        })
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`GitHub API error: ${errorData.message}`);
-                    }
-
-                    showToast('Successfully saved to GitHub!', 'success');
-
-                } catch (error) {
-                    console.error('Failed to save to GitHub:', error);
-                    throw error;
-                }
-            };
-
-            // --- UI Helpers ---
-            let toastTimer;
-            const showToast = (message, type = 'success') => {
-                clearTimeout(toastTimer);
-                toastMessage.textContent = message;
-                toast.className = `fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transform transition-all duration-300 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'} translate-y-0 opacity-100`;
-                toastTimer = setTimeout(() => {
-                    toast.className = toast.className.replace('translate-y-0 opacity-100', 'translate-y-20 opacity-0');
-                }, 4000);
-            };
-
-            // --- Event Listeners ---
-            passwordForm.addEventListener('submit', handlePasswordSubmit);
-            logoutBtn.addEventListener('click', handleLogout);
-            Object.keys(tabs).forEach(id => tabs[id].addEventListener('click', () => switchTab(id)));
-            reviewForm.addEventListener('submit', addReview);
-            imageUpload.addEventListener('change', handleImageUpload);
-            reviewsList.addEventListener('click', (e) => {
-                if (e.target.classList.contains('delete-btn')) {
-                    const index = e.target.dataset.index;
-                    if (window.confirm('Are you sure you want to delete this review?')) {
-                        deleteReview(index);
-                    }
-                }
-            });
-
-            init();
+        const putResp = await fetch(url, {
+          method: 'PUT',
+          headers: { Authorization: `token ${decryptedPat}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: 'Update reviews',
+            content: btoa(unescape(encodeURIComponent(JSON.stringify(reviews, null, 2)))),
+            sha
+          })
         });
-    </script>
+        if (!putResp.ok) throw new Error('Failed to save reviews');
+        showToast('Reviews saved to GitHub!');
+      } catch (err) {
+        console.error('Save error:', err);
+        showToast('Failed to save reviews', true);
+      }
+    };
+
+    const loadReviewsFromGitHub = async () => {
+      try {
+        const url = getRawUrl(REVIEWS_FILE_PATH);
+        const response = await fetch(url + `?t=${Date.now()}`);
+        if (!response.ok) { if (response.status === 404) { reviews = []; return; } throw new Error(`Failed to load reviews (${response.status})`); }
+        reviews = await response.json();
+        renderReviews();
+      } catch (err) {
+        console.error('Load error:', err);
+        showToast('Could not load reviews from GitHub', true);
+      }
+    };
+
+    // --- Toast ---
+    let toastTimer;
+    const showToast = (msg, error = false) => {
+      toastMessage.textContent = msg;
+      toast.className = `fixed bottom-5 right-5 py-2 px-4 rounded-lg shadow-lg transform transition-all duration-300
+        ${error ? 'bg-red-600' : 'bg-green-600'} translate-y-0 opacity-100`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 4000);
+    };
+
+    // --- Events ---
+    loginForm.addEventListener('submit', handleLogin);
+    logoutBtn.addEventListener('click', handleLogout);
+    addTab.addEventListener('click', () => switchTab('add'));
+    readTab.addEventListener('click', () => switchTab('read'));
+    reviewForm.addEventListener('submit', addReview);
+    saveToGithubBtn.addEventListener('click', saveReviewsToGitHub);
+    imageUpload.addEventListener('change', handleImageUpload);
+
+    init();
+  });
+  </script>
 </body>
 </html>
