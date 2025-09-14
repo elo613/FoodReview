@@ -64,70 +64,131 @@ document.addEventListener("DOMContentLoaded", () => {
 // ... inside ApiService ...
 
         _compressImage(file) {
-            console.log(`Starting compression for: ${file.name}, size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
             return new Promise((resolve, reject) => {
+                // More conservative options for mobile
                 const options = {
-                    maxWidth: 800,
-                    maxHeight: 800,
-                    quality: 0.7,
-                    maxFileSize: 2 * 1024 * 1024 // 2MB target
+                    maxWidth: 600,  // Reduced from 800
+                    maxHeight: 600, // Reduced from 800
+                    quality: 0.8,   // Slightly higher quality
+                    maxFileSize: 1024 * 1024 // 1MB target instead of 2MB
                 };
         
-                // No need to compress if it's already small enough
-                if (file.size <= options.maxFileSize && file.type === 'image/jpeg') {
-                    console.log("Image is small enough, skipping compression.");
+                // If file is already small enough, don't compress
+                if (file.size <= options.maxFileSize) {
                     return resolve(file);
                 }
         
                 const image = new Image();
-                image.src = URL.createObjectURL(file);
+                image.crossOrigin = "anonymous"; // Important for mobile browsers
+                
+                const cleanup = () => {
+                    URL.revokeObjectURL(image.src);
+                };
         
                 image.onload = () => {
-                    console.log("Image loaded into memory. Starting canvas operations.");
                     try {
                         let { width, height } = image;
-                        const ratio = Math.min(options.maxWidth / width, options.maxHeight / height, 1);
+                        
+                        // More aggressive scaling for mobile
+                        const ratio = Math.min(
+                            options.maxWidth / width, 
+                            options.maxHeight / height, 
+                            1
+                        );
+                        
                         width = Math.floor(width * ratio);
                         height = Math.floor(height * ratio);
+                        
+                        // Ensure minimum dimensions
+                        if (width < 1 || height < 1) {
+                            cleanup();
+                            return reject(new Error('Image dimensions too small after scaling'));
+                        }
                         
                         const canvas = document.createElement('canvas');
                         canvas.width = width;
                         canvas.height = height;
+                        
                         const ctx = canvas.getContext('2d');
                         if (!ctx) {
-                            return reject(new Error("Could not get canvas context."));
+                            cleanup();
+                            return reject(new Error('Could not get canvas context'));
                         }
+                        
+                        // Better quality settings for mobile
+                        ctx.imageSmoothingEnabled = true;
                         ctx.imageSmoothingQuality = 'high';
                         ctx.drawImage(image, 0, 0, width, height);
         
-                        console.log(`Drawn to canvas at ${width}x${height}. Converting to Blob.`);
-                        canvas.toBlob(blob => {
-                          if (!blob) {
-                            // Fallback for browsers where toBlob might fail
-                            console.warn("canvas.toBlob() returned null. Attempting fallback.");
-                            return reject(new Error("Canvas to Blob conversion failed."));
-                          }
-                          console.log(`Compression successful. New size: ${(blob.size / 1024).toFixed(2)} KB`);
-                          const compressedFile = new File([blob], file.name.replace(/\.\w+$/, '.jpg'), {
-                            type: 'image/jpeg',
-                            lastModified: Date.now(),
-                          });
-                          resolve(compressedFile);
-                        }, 'image/jpeg', options.quality);
+                        // Try toBlob first, with immediate fallback to toDataURL
+                        const tryToBlob = () => {
+                            try {
+                                canvas.toBlob((blob) => {
+                                    if (blob && blob.size > 0) {
+                                        const compressedFile = new File([blob], 
+                                            file.name.replace(/\.\w+$/, '.jpg'), {
+                                            type: 'image/jpeg',
+                                            lastModified: Date.now(),
+                                        });
+                                        cleanup();
+                                        resolve(compressedFile);
+                                    } else {
+                                        // Fallback to toDataURL
+                                        fallbackToDataURL();
+                                    }
+                                }, 'image/jpeg', options.quality);
+                            } catch (error) {
+                                console.warn('toBlob failed, using toDataURL:', error);
+                                fallbackToDataURL();
+                            }
+                        };
         
-                    } catch(error) {
-                        console.error("Error during canvas processing:", error);
-                        reject(error);
-                    } finally {
-                        URL.revokeObjectURL(image.src);
+                        const fallbackToDataURL = () => {
+                            try {
+                                const dataUrl = canvas.toDataURL('image/jpeg', options.quality);
+                                if (dataUrl && dataUrl.length > 100) { // Basic validation
+                                    const byteString = atob(dataUrl.split(',')[1]);
+                                    const buffer = new ArrayBuffer(byteString.length);
+                                    const intArray = new Uint8Array(buffer);
+                                    
+                                    for (let i = 0; i < byteString.length; i++) {
+                                        intArray[i] = byteString.charCodeAt(i);
+                                    }
+                                    
+                                    const fallbackFile = new File([intArray], 
+                                        file.name.replace(/\.\w+$/, '.jpg'), {
+                                        type: 'image/jpeg',
+                                        lastModified: Date.now(),
+                                    });
+                                    
+                                    cleanup();
+                                    resolve(fallbackFile);
+                                } else {
+                                    cleanup();
+                                    reject(new Error('Failed to create data URL'));
+                                }
+                            } catch (error) {
+                                cleanup();
+                                reject(new Error('Both toBlob and toDataURL failed: ' + error.message));
+                            }
+                        };
+        
+                        // Use setTimeout to prevent blocking the UI on mobile
+                        setTimeout(tryToBlob, 10);
+        
+                    } catch (error) {
+                        cleanup();
+                        reject(new Error('Image processing failed: ' + error.message));
                     }
                 };
         
                 image.onerror = () => {
-                    URL.revokeObjectURL(image.src);
-                    console.error("Failed to load image for compression. It might be corrupt or an unsupported format.");
-                    reject(new Error('Failed to load image for compression.'));
+                    cleanup();
+                    reject(new Error('Failed to load image for compression'));
                 };
+        
+                // Set src last, after all event handlers are attached
+                image.src = URL.createObjectURL(file);
             });
         },
 
@@ -419,51 +480,71 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             // REFACTORED: Event listener for image upload
-            UIManager.imageUpload.addEventListener("change", async (e) => {
-                const file = e.target.files[0];
-                const cleanUp = () => {
-                    this.setState({ imageFile: null });
-                    UIManager.imagePreview.src = '';
-                    UIManager.imagePreview.classList.add('hidden');
-                    UIManager.imageProgress.classList.add('hidden');
-                    e.target.value = ''; // Reset input
-                };
-
-                if (!file) return cleanUp();
-
-                if (!file.type.startsWith('image/')) {
-                    UIManager.showToast("Please select a valid image file.", true);
-                    return cleanUp();
-                }
-                if (file.size > 15 * 1024 * 1024) { // 15MB limit
-                    UIManager.showToast("Image file too large (max 15MB).", true);
-                    return cleanUp();
-                }
-                
-                await this.withLoading(async () => {
-                    this.setState({ imageFile: file });
-                    UIManager.imageProgress.classList.remove('hidden');
-                    UIManager.imageProgress.value = 0;
-                    UIManager.imagePreview.classList.add('loading'); // Show loading state on preview
-                    UIManager.imagePreview.classList.remove('hidden');
-
-                    try {
-                        const dataUrl = await this._readFileWithProgress(file);
-                        UIManager.imagePreview.src = dataUrl;
-                    } catch (error) {
-                        UIManager.showToast(error.message, true);
-                        cleanUp(); // Clear state if reading fails
-                    } finally {
-                        UIManager.imageProgress.classList.add('hidden');
-                        UIManager.imagePreview.classList.remove('loading');
-                    }
-                });
-            });
-
-            UIManager.addTab.addEventListener("click", () => this.setState({ activeTab: 'add' }));
-            UIManager.readTab.addEventListener("click", () => this.setState({ activeTab: 'read' }));
-        }
+UIManager.imageUpload.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    
+    const cleanUp = () => {
+        this.setState({ imageFile: null });
+        UIManager.imagePreview.src = '';
+        UIManager.imagePreview.classList.add('hidden');
+        UIManager.imageProgress.classList.add('hidden');
+        e.target.value = ''; // Reset input
     };
+
+    if (!file) return cleanUp();
+
+    // More restrictive checks for mobile
+    if (!file.type.startsWith('image/')) {
+        UIManager.showToast("Please select a valid image file.", true);
+        return cleanUp();
+    }
+    
+    // Reduced size limit for mobile compatibility
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit instead of 15MB
+        UIManager.showToast("Image file too large (max 10MB).", true);
+        return cleanUp();
+    }
+    
+    // Check if we're likely on a mobile device
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+                     || window.innerWidth < 768;
+    
+    if (isMobile && file.size > 5 * 1024 * 1024) { // 5MB limit for mobile
+        UIManager.showToast("Image file too large for mobile (max 5MB).", true);
+        return cleanUp();
+    }
+    
+    await this.withLoading(async () => {
+        try {
+            this.setState({ imageFile: file });
+            UIManager.imageProgress.classList.remove('hidden');
+            UIManager.imageProgress.value = 0;
+            UIManager.imagePreview.classList.add('loading');
+            UIManager.imagePreview.classList.remove('hidden');
+
+            // Add a small delay to ensure UI updates on mobile
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            const dataUrl = await this._readFileWithProgress(file);
+            
+            // Validate the data URL
+            if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+                throw new Error('Invalid image data');
+            }
+            
+            UIManager.imagePreview.src = dataUrl;
+            UIManager.imagePreview.onload = () => {
+                UIManager.imagePreview.classList.remove('loading');
+                UIManager.imageProgress.classList.add('hidden');
+            };
+            
+        } catch (error) {
+            console.error('Image processing error:', error);
+            UIManager.showToast(`Image processing failed: ${error.message}`, true);
+            cleanUp();
+        }
+    });
+});
 
     AppController.init();
 });
