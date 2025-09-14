@@ -410,18 +410,26 @@ document.addEventListener("DOMContentLoaded", () => {
         bindEvents() {
             const { elements } = UIManager;
             
-            elements.loginForm.addEventListener("submit", (e) => {
-                e.preventDefault();
-                UIManager.setLoginState({ isLoading: true });
-                this.withLoadingState(async () => {
+        elements.loginForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            UIManager.setLoginState({ isLoading: true });
+        
+            const handleLogin = async () => {
+                try {
                     const password = elements.loginPassword.value;
                     const token = await ApiService.getPat(password);
                     sessionStorage.setItem('github_pat', token);
                     const reviews = await ApiService.fetchReviews();
                     this.setState({ token, reviews, activeTab: 'read' });
-                }).catch(err => UIManager.setLoginState({ error: err.message }))
-                  .finally(() => UIManager.setLoginState({ isLoading: false }));
-            });
+                } catch (err) {
+                    UIManager.setLoginState({ error: err.message });
+                } finally {
+                    UIManager.setLoginState({ isLoading: false });
+                }
+            };
+        
+            this.withLoadingState(handleLogin);
+        });
 
             elements.logoutBtn.addEventListener("click", () => {
                 sessionStorage.removeItem('github_pat');
