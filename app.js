@@ -63,23 +63,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         _compressImage(file) {
             return new Promise((resolve, reject) => {
-                // MOBILE FIX: Detect mobile and use more conservative settings
-                const isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 const options = {
-                    maxWidth: isMobile ? 600 : 800,
-                    maxHeight: isMobile ? 600 : 800,
-                    quality: isMobile ? 0.6 : 0.7,
-                    maxFileSize: isMobile ? 1 * 1024 * 1024 : 2 * 1024 * 1024 // 1MB for mobile, 2MB for desktop
+                    maxWidth: 800,
+                    maxHeight: 800,
+                    quality: 0.7,
+                    maxFileSize: 2 * 1024 * 1024 // 2MB target
                 };
-
                 if (file.size <= options.maxFileSize) {
                     return resolve(file); // No need to compress if already small
                 }
-
                 const image = new Image();
-                const objectUrl = URL.createObjectURL(file);
-                image.src = objectUrl;
-                
+                image.src = URL.createObjectURL(file);
                 image.onload = () => {
                     try {
                         let { width, height } = image;
@@ -91,56 +85,38 @@ document.addEventListener("DOMContentLoaded", () => {
                         canvas.width = width;
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
-                        
-                        // MOBILE FIX: Use appropriate quality based on device
-                        ctx.imageSmoothingEnabled = true;
-                        ctx.imageSmoothingQuality = isMobile ? 'medium' : 'high';
+                        ctx.imageSmoothingQuality = 'high';
                         ctx.drawImage(image, 0, 0, width, height);
 
-                        // MOBILE FIX: Clean up image reference immediately
-                        image.src = '';
-                        URL.revokeObjectURL(objectUrl);
-
                         canvas.toBlob(blob => {
-                            // MOBILE FIX: Clear canvas immediately after use
-                            canvas.width = 0;
-                            canvas.height = 0;
-                            
-                            if (!blob) {
-                                console.warn("toBlob failed, using toDataURL fallback");
-                                try {
-                                    const dataUrl = canvas.toDataURL('image/jpeg', options.quality);
-                                    const byteString = atob(dataUrl.split(',')[1]);
-                                    const buffer = new ArrayBuffer(byteString.length);
-                                    const intArray = new Uint8Array(buffer);
-                                    for (let i = 0; i < byteString.length; i++) {
-                                        intArray[i] = byteString.charCodeAt(i);
-                                    }
-                                    const fallbackFile = new File([intArray], file.name.replace(/\.\w+$/, '.jpg'), { 
-                                        type: 'image/jpeg' 
-                                    });
-                                    resolve(fallbackFile);
-                                } catch (fallbackError) {
-                                    reject(new Error('Image compression failed on mobile browser'));
-                                }
-                                return;
+                          if (!blob) {
+                            console.warn("toBlob failed, using toDataURL fallback");
+                            const dataUrl = canvas.toDataURL('image/jpeg', options.quality);
+                            const byteString = atob(dataUrl.split(',')[1]);
+                            const buffer = new ArrayBuffer(byteString.length);
+                            const intArray = new Uint8Array(buffer);
+                            for (let i = 0; i < byteString.length; i++) {
+                              intArray[i] = byteString.charCodeAt(i);
                             }
-                            
-                            const compressedFile = new File([blob], file.name.replace(/\.\w+$/, '.jpg'), {
-                                type: 'image/jpeg',
-                                lastModified: Date.now(),
-                            });
-                            resolve(compressedFile);
+                            const fallbackFile = new File([intArray], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' });
+                            resolve(fallbackFile);
+                            return;
+                          }
+                          const compressedFile = new File([blob], file.name.replace(/\.\w+$/, '.jpg'), {
+                            type: 'image/jpeg',
+                            lastModified: Date.now(),
+                          });
+                          resolve(compressedFile);
                         }, 'image/jpeg', options.quality);
 
                     } catch(error) {
-                        URL.revokeObjectURL(objectUrl);
-                        reject(new Error(`Image processing failed: ${error.message}`));
+                        reject(error);
+                    } finally {
+                        URL.revokeObjectURL(image.src);
                     }
                 };
-                
                 image.onerror = () => {
-                    URL.revokeObjectURL(objectUrl);
+                    URL.revokeObjectURL(image.src);
                     reject(new Error('Failed to load image for compression.'));
                 };
             });
@@ -150,101 +126,51 @@ document.addEventListener("DOMContentLoaded", () => {
             const sanitized = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
             const fileName = `images/${Date.now()}_${sanitized}`;
             const url = this._getApiUrl(fileName);
-            
-            // MOBILE FIX: More robust base64 conversion with timeout
             const base64Content = await new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                
-                // MOBILE FIX: Add timeout for mobile browsers
-                const timeout = setTimeout(() => {
-                    reader.abort();
-                    reject(new Error('File reading timeout - try a smaller image'));
-                }, 30000); // 30 second timeout
-                
                 reader.onload = () => {
-                    clearTimeout(timeout);
-                    try {
-                        const result = reader.result;
-                        if (!result) {
-                            throw new Error('FileReader returned null result');
-                        }
-                        const base64 = result.includes(',') ? result.split(',')[1] : result;
-                        if (!base64 || base64.length === 0) {
-                            throw new Error('Invalid base64 data generated');
-                        }
-                        resolve(base64);
-                    } catch (error) {
-                        reject(new Error(`Base64 conversion failed: ${error.message}`));
-                    }
+                  const result = reader.result;
+                  const base64 = result.includes(',') ? result.split(',')[1] : result;
+                  resolve(base64);
                 };
-                
-                reader.onerror = () => {
-                    clearTimeout(timeout);
-                    reject(new Error('FileReader error - try a different image'));
-                };
-                
+                reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
-            
-            const body = { 
-                message: `Upload image ${file.name}`, 
-                content: base64Content 
-            };
-            
-            // MOBILE FIX: Add longer timeout for mobile network conditions
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds
-            
-            try {
-                const res = await fetch(url, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(body),
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (!res.ok) {
-                    const errorText = await res.text().catch(() => 'Unknown error');
-                    throw new Error(`Upload failed: ${res.status} ${res.statusText} - ${errorText}`);
-                }
-                
-                const data = await res.json();
-                return data.content.path;
-            } catch (error) {
-                clearTimeout(timeoutId);
-                if (error.name === 'AbortError') {
-                    throw new Error('Upload timed out - check your connection and try again');
-                }
-                throw error;
-            }
+            const body = { message: `Upload image ${file.name}`, content: base64Content };
+            const res = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) throw new Error(`Image upload failed: ${res.statusText}`);
+            const data = await res.json();
+            return data.content.path;
         },
         
         async fetchPrivateImageAsDataUrl(path, token) {
-            const url = this._getApiUrl(path);
-            const res = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/vnd.github.v3.raw'
-                }
-            });
-            if (!res.ok) {
-                console.error("Failed to fetch image from API:", path);
-                return null;
-            }
-            const blob = await res.blob();
-            return new Promise((resolve, reject) => {
-               const reader = new FileReader();
-               reader.onloadend = () => resolve(reader.result);
-               reader.onerror = reject;
-               reader.readAsDataURL(blob);
-            });
-        }
+             const url = this._getApiUrl(path);
+             const res = await fetch(url, {
+                 headers: {
+                     'Authorization': `Bearer ${token}`,
+                     'Accept': 'application/vnd.github.v3.raw'
+                 }
+             });
+             if (!res.ok) {
+                 console.error("Failed to fetch image from API:", path);
+                 return null;
+             }
+             const blob = await res.blob();
+             return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+             });
+         }
     };
 
     // --- UIManager ---
@@ -264,7 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
         reviewsList: document.getElementById("reviewsList"),
         imageUpload: document.getElementById("imageUpload"),
         imagePreview: document.getElementById("imagePreview"),
-        imageProgress: document.getElementById("imageProgress"),
+        imageProgress: document.getElementById("imageProgress"), // <-- ADDED
         toast: document.getElementById("toast"),
 
         showToast(msg, error = false) {
@@ -382,25 +308,12 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         },
 
-        // MOBILE FIX: Enhanced file reading with progress
+        // NEW HELPER: Reads a file with progress updates
         _readFileWithProgress(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                
-                // MOBILE FIX: Add timeout
-                const timeout = setTimeout(() => {
-                    reader.abort();
-                    reject(new Error("File reading timeout"));
-                }, 15000);
-                
-                reader.onload = (e) => {
-                    clearTimeout(timeout);
-                    resolve(e.target.result);
-                };
-                reader.onerror = () => {
-                    clearTimeout(timeout);
-                    reject(new Error("Failed to read file"));
-                };
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = () => reject(new Error("Failed to read file."));
                 reader.onprogress = (event) => {
                     if (event.lengthComputable) {
                         UIManager.imageProgress.value = Math.round((event.loaded / event.total) * 100);
@@ -446,14 +359,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 this.setState({ token: null, reviews: [] });
             });
 
-            // MOBILE FIX: Enhanced form submission with better mobile handling
             UIManager.reviewForm.addEventListener("submit", e => {
                 e.preventDefault();
-                
-                // MOBILE FIX: Prevent double-submission
-                const submitButton = e.target.querySelector('button[type="submit"]');
-                if (submitButton.disabled) return;
-                
                 this.withLoading(async () => {
                     const form = e.target;
                     const newReview = Object.fromEntries(new FormData(form));
@@ -461,35 +368,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     const file = this.state.imageFile;
 
                     if (file) {
-                        // MOBILE FIX: Better progress messaging
-                        const isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                        UIManager.showToast(isMobile ? "Processing image for mobile..." : "Compressing & uploading image...");
-                        
-                        try {
-                            // MOBILE FIX: Memory check before processing
-                            if ('memory' in performance && performance.memory.usedJSHeapSize > 50 * 1024 * 1024) {
-                                throw new Error('Insufficient memory. Try a smaller image or refresh the page.');
-                            }
-                            
-                            const compressedFile = await ApiService._compressImage(file);
-                            
-                            // MOBILE FIX: Validate compressed file size
-                            const maxSize = isMobile ? 2 * 1024 * 1024 : 5 * 1024 * 1024;
-                            if (compressedFile.size > maxSize) {
-                                throw new Error(`Image still too large after compression. Please use a smaller image (max ${Math.round(maxSize / (1024 * 1024))}MB).`);
-                            }
-                            
-                            UIManager.showToast("Uploading image...");
-                            newReview.image = await ApiService.uploadImage(compressedFile, this.state.token);
-                            
-                            // MOBILE FIX: Force garbage collection hint
-                            if (window.gc) window.gc();
-                            
-                        } catch (imageError) {
-                            console.error('Image processing error:', imageError);
-                            UIManager.showToast(`Image error: ${imageError.message}`, true);
-                            return; // Stop submission if image processing fails
-                        }
+                        UIManager.showToast("Compressing & uploading image...");
+                        const compressedFile = await ApiService._compressImage(file);
+                        newReview.image = await ApiService.uploadImage(compressedFile, this.state.token);
                     }
                     
                     const updated = [...this.state.reviews, newReview];
@@ -511,7 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             });
 
-            // MOBILE FIX: Enhanced image upload handler with mobile-specific validation
+            // REFACTORED: Event listener for image upload
             UIManager.imageUpload.addEventListener("change", async (e) => {
                 const file = e.target.files[0];
                 const cleanUp = () => {
@@ -524,18 +405,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (!file) return cleanUp();
 
-                // MOBILE FIX: Enhanced file validation
                 if (!file.type.startsWith('image/')) {
                     UIManager.showToast("Please select a valid image file.", true);
                     return cleanUp();
                 }
-                
-                // MOBILE FIX: Device-specific file size limits
-                const isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                const maxSize = isMobile ? 10 * 1024 * 1024 : 15 * 1024 * 1024; // 10MB mobile, 15MB desktop
-                if (file.size > maxSize) {
-                    const maxSizeMB = Math.round(maxSize / (1024 * 1024));
-                    UIManager.showToast(`Image too large (max ${maxSizeMB}MB ${isMobile ? 'on mobile' : ''}).`, true);
+                if (file.size > 15 * 1024 * 1024) { // 15MB limit
+                    UIManager.showToast("Image file too large (max 15MB).", true);
                     return cleanUp();
                 }
                 
@@ -543,25 +418,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     this.setState({ imageFile: file });
                     UIManager.imageProgress.classList.remove('hidden');
                     UIManager.imageProgress.value = 0;
-                    UIManager.imagePreview.classList.add('loading');
+                    UIManager.imagePreview.classList.add('loading'); // Show loading state on preview
                     UIManager.imagePreview.classList.remove('hidden');
 
                     try {
-                        // MOBILE FIX: Memory check before processing
-                        if ('memory' in performance && performance.memory.usedJSHeapSize > 50 * 1024 * 1024) {
-                            throw new Error('Insufficient memory for image processing. Try refreshing the page or using a smaller image.');
-                        }
-                        
                         const dataUrl = await this._readFileWithProgress(file);
                         UIManager.imagePreview.src = dataUrl;
-                        
-                        // MOBILE FIX: Trigger garbage collection hint
-                        if (window.gc) window.gc();
-                        
                     } catch (error) {
-                        console.error('Image preview error:', error);
-                        UIManager.showToast(`Image preview failed: ${error.message}`, true);
-                        cleanUp();
+                        UIManager.showToast(error.message, true);
+                        cleanUp(); // Clear state if reading fails
                     } finally {
                         UIManager.imageProgress.classList.add('hidden');
                         UIManager.imagePreview.classList.remove('loading');
